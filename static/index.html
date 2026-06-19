@@ -4,335 +4,169 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Twitch Points Dashboard</title>
+
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f0f13; color: #efeff1; min-height: 100vh; padding: 24px; }
+
   h1 { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 4px; }
   .subtitle { font-size: 13px; color: #adadb8; margin-bottom: 20px; }
-  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
-  .stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-  .stat { background: #1f1f23; border: 0.5px solid #2a2a35; border-radius: 8px; padding: 10px 16px; }
-  .stat-label { font-size: 11px; color: #adadb8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
-  .stat-value { font-size: 20px; font-weight: 600; color: #fff; }
-  .controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .refresh-btn { background: #9147ff; border: none; color: #fff; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; }
-  .refresh-btn:hover { background: #772ce8; }
-  .refresh-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .timer { font-size: 12px; color: #adadb8; }
-  .search { background: #1f1f23; border: 0.5px solid #2a2a35; color: #efeff1; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 200px; outline: none; }
-  .search::placeholder { color: #5a5a6e; }
-  table { width: 100%; border-collapse: collapse; background: #1f1f23; border-radius: 10px; overflow: hidden; border: 0.5px solid #2a2a35; }
-  thead { background: #18181b; }
-  th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; color: #adadb8; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid #2a2a35; }
-  th.sortable { cursor: pointer; user-select: none; }
-  th.sortable:hover { color: #efeff1; }
-  td { padding: 10px 16px; font-size: 13px; border-bottom: 0.5px solid #18181b; vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
+
+  .stats { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .stat { background: #1f1f23; padding: 10px 16px; border-radius: 8px; border: 1px solid #2a2a35; }
+  .stat-label { font-size: 11px; color: #adadb8; }
+  .stat-value { font-size: 20px; font-weight: 600; }
+
+  .controls { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #2a2a35;
+    background: #1f1f23;
+    color: white;
+    width: 220px;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #1f1f23;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  th, td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #2a2a35;
+    font-size: 13px;
+  }
+
+  th {
+    text-align: left;
+    color: #adadb8;
+    font-size: 11px;
+  }
+
   tr:hover td { background: #26262c; }
-  .twitch-name { font-weight: 500; color: #efeff1; }
-  .twitch-link { color: #9147ff; text-decoration: none; font-size: 11px; }
-  .twitch-link:hover { text-decoration: underline; }
-  .points { font-weight: 600; font-size: 14px; color: #fff; font-variant-numeric: tabular-nums; }
-  .points.loading { color: #5a5a6e; font-weight: 400; font-size: 12px; }
-  .points.error { color: #eb0400; font-weight: 400; font-size: 12px; }
-  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
-  .badge-running { background: #0f6e56; color: #e1f5ee; }
-  .badge-unknown { background: #2a2a35; color: #5a5a6e; }
-  .streamer-cell { font-size: 11px; color: #adadb8; }
-  .render-email { font-size: 11px; color: #5a5a6e; }
-  .account-row td { background: #18181b; }
-  .account-row:hover td { background: #20202a; }
-  .channel-row td { padding-top: 8px; padding-bottom: 8px; }
-  .channel-name { color: #adadb8; font-size: 13px; padding-left: 18px; position: relative; }
-  .channel-name::before { content: '↳'; position: absolute; left: 0; color: #4a4a5e; }
-  .channel-row:last-of-type td { border-bottom: 0.5px solid #2a2a35; }
-  .spin { display: inline-block; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .progress-bar { height: 2px; background: #2a2a35; border-radius: 1px; margin-bottom: 16px; overflow: hidden; }
-  .progress-fill { height: 100%; background: #9147ff; border-radius: 1px; transition: width 1s linear; }
-  .num { color: #5a5a6e; font-size: 11px; }
-  .status-bar { background: #1f1f23; border: 0.5px solid #2a2a35; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 12px; color: #adadb8; }
-  .status-bar.error { border-color: #eb0400; color: #eb0400; }
-  .status-bar.ok { border-color: #0f6e56; color: #57e5b4; }
+
+  .badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+  }
+
+  .ok { background: #0f6e56; color: white; }
+  .warn { background: #2a2a35; color: #adadb8; }
 </style>
 </head>
+
 <body>
 
-<div class="top-bar">
-  <div>
-    <h1>Twitch Points Dashboard</h1>
-    <div class="subtitle">All accounts — auto-refreshes every 10 minutes</div>
-  </div>
-  <div class="controls">
-    <input class="search" type="text" id="search" placeholder="Search accounts..." oninput="renderTable()">
-    <span class="timer" id="timer">Next refresh in 10:00</span>
-    <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
-      <span id="refreshIcon">&#8635;</span> Refresh all
-    </button>
-  </div>
-</div>
+<h1>Twitch Points Dashboard</h1>
+<div class="subtitle">Live miner data (no Render API)</div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-label">Total accounts</div><div class="stat-value" id="totalAccounts">—</div></div>
-  <div class="stat"><div class="stat-label">Total points</div><div class="stat-value" id="totalPoints">—</div></div>
-  <div class="stat"><div class="stat-label">Services found</div><div class="stat-value" id="servicesFound">—</div></div>
-  <div class="stat"><div class="stat-label">Last updated</div><div class="stat-value" id="lastUpdated" style="font-size:14px">—</div></div>
+  <div class="stat">
+    <div class="stat-label">Accounts</div>
+    <div class="stat-value" id="totalAccounts">0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">Total Points</div>
+    <div class="stat-value" id="totalPoints">0</div>
+  </div>
 </div>
 
-<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:100%"></div></div>
-<div class="status-bar" id="statusBar">Connecting to Render...</div>
+<div class="controls">
+  <input class="search" id="search" placeholder="Search..." oninput="render()" />
+</div>
 
 <table>
   <thead>
     <tr>
       <th>#</th>
-      <th>Web service / channel</th>
-      <th>Render email</th>
-      <th class="sortable" onclick="sortByPoints()">Channel points &#8597;</th>
+      <th>Account</th>
+      <th>Channel</th>
+      <th>Points</th>
       <th>Status</th>
     </tr>
   </thead>
-  <tbody id="tableBody"></tbody>
+  <tbody id="body"></tbody>
 </table>
 
 <script>
 const ACCOUNTS = [
-  { render: "zanxzanx70@gmail.com",        twitch: "beelzebul7612",       streamers: "Imshayph, Sirdapper, Waffletrades_" },
-  { render: "zanxzanx70@gmail.com",        twitch: "beelzebul121212",     streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx70+1@gmail.com",      twitch: "avenger000000424",    streamers: "Waffletrades, Imshayph, Sirdapper" },
-  { render: "zanxzanx70+1@gmail.com",      twitch: "vampireking522",       streamers: "Waffletrades, Imshayph, Sirdapper" },
-  { render: "zanxzanx70+2@gmail.com",      twitch: "ryangarciafan3133",    streamers: "Sirdapper, Imshayph, Waffletrades_" },
-  { render: "zanxzanx70+2@gmail.com",      twitch: "discorduser0313no1",   streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+2@gmail.com",      twitch: "CoffeeWithChris89",    streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx71+2@gmail.com",      twitch: "LunarBrandon42",       streamers: "Waffletrades, Imshayph, Sirdapper" },
-  { render: "zanxzanx71+3@gmail.com",      twitch: "SilentMikey16",        streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx71+3@gmail.com",      twitch: "TylerRespawns33",      streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx71+4@gmail.com",      twitch: "FrostyEthan25",        streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx71+4@gmail.com",      twitch: "MasonStreams08",        streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "zanxzanx71+5@gmail.com",      twitch: "DevinOnline64",         streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+5@gmail.com",      twitch: "RetroHunterJay91",      streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+6@gmail.com",      twitch: "JustCallMeNick12",      streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+6@gmail.com",      twitch: "LoganUnlocked73",       streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+7@gmail.com",      twitch: "MidnightTrey44",        streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+7@gmail.com",      twitch: "AlexAfterDark19",       streamers: "Sirdapper, Imshayph, Waffletrades" },
-  { render: "zanxzanx71+8@gmail.com",      twitch: "NoahLevelsUp56",        streamers: "Waffletrades, Imshayph, Sirdapper" },
-  { render: "zanxzanx71+8@gmail.com",      twitch: "ZachPlaysGames82",      streamers: "Waffletrades, Imshayph, Sirdapper" },
-  { render: "stephendavis664+1@gmail.com", twitch: "kjnjnl",                streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+1@gmail.com", twitch: "beelzebullll1",         streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+2@gmail.com", twitch: "jamesrandol121",        streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+2@gmail.com", twitch: "davidgogin21212",       streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+3@gmail.com", twitch: "damianmadness",         streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+3@gmail.com", twitch: "gavindanold313",        streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+4@gmail.com", twitch: "jameylondon13131",      streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+4@gmail.com", twitch: "david1133131313",       streamers: "Imshayph, Sirdapper, Waffletrades" },
-  { render: "stephendavis664+5@gmail.com", twitch: "michalchandler1313",    streamers: "Copieburger, Ourasil, Imshayph" },
-  { render: "stephendavis664+5@gmail.com", twitch: "lebronjames33131",      streamers: "Copieburger, Ourasil, Imshayph" },
-  { render: "stephendavis664+6@gmail.com", twitch: "mikeypersek3113",       streamers: "Copieburger, Ourasil, Imshayph" },
-  { render: "stephendavis664+6@gmail.com", twitch: "growagarden221",        streamers: "Copieburger, Ourasil, Imshayph" },
-  { render: "stephendavis664+7@gmail.com", twitch: "increadiblehulk31313",  streamers: "Copieburger, Ourasil, Sirdapper" },
-  { render: "stephendavis664+7@gmail.com", twitch: "spiderman33j313",       streamers: "Copieburger, Ourasil, Sirdapper" },
-  { render: "zanxzanx70+3@gmail.com",      twitch: "PixelMason27",          streamers: "leon10lu_" },
-  { render: "zanxzanx70+4@gmail.com",      twitch: "RyanPlays9822",         streamers: "Imshayph" },
-  { render: "zanxzanx70+5@gmail.com",      twitch: "NorthsideNate21",       streamers: "Sirdapper" },
-  { render: "zanxzanx71@gmail.com",        twitch: "CasualCarter14",        streamers: "Sirdapper" },
-  { render: "zanxzanx71+1@gmail.com",      twitch: "JakeOnKeyboard77",      streamers: "leon10lu_" },
+  "beelzebul121212",
+  "beelzebul7612",
+  "avenger000000424",
+  "vampireking522",
+  "ryangarciafan3133",
+  "discorduser0313no1",
+  "CoffeeWithChris89",
+  "LunarBrandon42",
+  "SilentMikey16",
+  "TylerRespawns33"
 ];
 
 let pointsData = {};
-let serviceIds = {};
-let sortAsc = false;
-let countdown = 600;
-let countdownInterval = null;
 
-function setStatus(msg, type) {
-  const el = document.getElementById('statusBar');
-  el.textContent = msg;
-  el.className = 'status-bar' + (type ? ' ' + type : '');
+// 🔥 LOAD FROM BACKEND
+async function load() {
+  try {
+    const res = await fetch("/api/points");
+    const data = await res.json();
+    pointsData = data;
+    render();
+  } catch (e) {
+    console.log("error", e);
+  }
 }
 
-async function discoverServices() {
-  try {
-    const r = await fetch('/api/services');
-    const data = await r.json();
-    data.forEach(svc => {
-      serviceIds[svc.name.toLowerCase()] = { id: svc.id, ownerId: svc.ownerId };
+// 🔥 RENDER TABLE
+function render() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const body = document.getElementById("body");
+
+  let html = "";
+  let totalPoints = 0;
+  let count = 0;
+
+  Object.entries(pointsData).forEach(([account, info], i) => {
+
+    if (!account.toLowerCase().includes(search)) return;
+
+    const channels = info.channels || {};
+    const entries = Object.entries(channels);
+
+    let accountPoints = 0;
+
+    entries.forEach(([name, pts]) => {
+      accountPoints += pts;
     });
-    document.getElementById('servicesFound').textContent = data.length;
-    setStatus('Connected — found ' + data.length + ' services across all Render accounts.', 'ok');
-    return true;
-  } catch(e) {
-    setStatus('Failed to connect to Render API: ' + e.message, 'error');
-    return false;
-  }
-}
 
-// Scans a service's logs for lines containing the Streamer repr that
-// Twitch-Channel-Points-Miner-v2 logs, e.g.:
-//   Streamer(username=imshayph, channel_id=157937392, channel_points=934)
-// channel_points can also appear abbreviated, e.g. "2.52k" for 2520.
-// No fixed list of expected usernames - whatever shows up in the logs gets picked up.
-async function extractChannelsFromLogs(serviceId, ownerId) {
-  const channels = {}; // lowercased username -> { name, points }
-  try {
-    const r = await fetch('/api/logs/' + serviceId + '?ownerId=' + encodeURIComponent(ownerId));
-    const logs = await r.json();
-    const entries = Array.isArray(logs) ? logs : (logs.logs || []);
-    const pattern = /Streamer\(username=([a-zA-Z0-9_]+),\s*channel_id=(\d+),\s*channel_points=([\d.,]+)(k)?\)/g;
-    // Walk newest -> oldest so the first match we see per username is its latest value.
-    for (let i = entries.length - 1; i >= 0; i--) {
-      const line = entries[i].message || entries[i].text || entries[i].log || '';
-      let m;
-      pattern.lastIndex = 0;
-      while ((m = pattern.exec(line)) !== null) {
-        const username = m[1];
-        const key = username.toLowerCase();
-        if (key in channels) continue;
-        let pts = parseFloat(m[3].replace(/,/g, ''));
-        if (isNaN(pts)) continue;
-        if (m[4]) pts = pts * 1000; // "2.52k" -> 2520
-        const displayName = username.charAt(0).toUpperCase() + username.slice(1);
-        channels[key] = { name: displayName, points: Math.round(pts) };
-      }
-    }
-  } catch(e) {
-    // leave channels empty - rendered as "no channel data found yet"
-  }
-  return channels;
-}
+    totalPoints += accountPoints;
+    count++;
 
-async function refreshAll() {
-  const btn = document.getElementById('refreshBtn');
-  const icon = document.getElementById('refreshIcon');
-  btn.disabled = true;
-  icon.classList.add('spin');
-
-  if (Object.keys(serviceIds).length === 0) {
-    const ok = await discoverServices();
-    if (!ok) { btn.disabled = false; icon.classList.remove('spin'); return; }
-  }
-
-  const BATCH = 5;
-  for (let i = 0; i < ACCOUNTS.length; i += BATCH) {
-    const batch = ACCOUNTS.slice(i, i + BATCH);
-    await Promise.all(batch.map(async (a) => {
-      const svcInfo = serviceIds[a.twitch.toLowerCase()];
-      if (!svcInfo) {
-        pointsData[a.twitch] = { channels: {}, notFound: true };
-        return;
-      }
-      const channels = await extractChannelsFromLogs(svcInfo.id, svcInfo.ownerId);
-      pointsData[a.twitch] = { channels };
-    }));
-    renderTable();
-  }
-
-  updateStats();
-  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-  btn.disabled = false;
-  icon.classList.remove('spin');
-  resetCountdown();
-}
-
-function renderTable() {
-  const search = document.getElementById('search').value.toLowerCase();
-  const rows = ACCOUNTS.filter(a => {
-    const info = pointsData[a.twitch];
-    const channelNames = info && info.channels ? Object.values(info.channels).map(c => c.name.toLowerCase()) : [];
-    return a.twitch.toLowerCase().includes(search) ||
-           a.render.toLowerCase().includes(search) ||
-           channelNames.some(n => n.includes(search));
-  });
-  document.getElementById('totalAccounts').textContent = rows.length;
-
-  let html = '';
-  rows.forEach((a, i) => {
-    const info = pointsData[a.twitch];
-    let statusBadge;
-    if (!info) {
-      statusBadge = '<span class="badge badge-unknown">—</span>';
-    } else if (info.notFound) {
-      statusBadge = '<span class="badge badge-unknown">—</span>';
-    } else {
-      statusBadge = '<span class="badge badge-running">running</span>';
-    }
-
-    html += '<tr class="account-row">' +
-      '<td class="num">' + (i + 1) + '</td>' +
-      '<td><div class="twitch-name">' + a.twitch + '</div>' +
-        '<a class="twitch-link" href="https://twitch.tv/' + a.twitch + '" target="_blank">twitch.tv/' + a.twitch + '</a></td>' +
-      '<td class="render-email">' + a.render + '</td>' +
-      '<td></td>' +
-      '<td>' + statusBadge + '</td>' +
-      '</tr>';
-
-    if (!info) {
-      html += '<tr class="channel-row"><td></td><td class="channel-name">fetching...</td><td></td><td></td><td></td></tr>';
-    } else if (info.notFound) {
-      html += '<tr class="channel-row"><td></td><td class="channel-name points error">service not found</td><td></td><td></td><td></td></tr>';
-    } else {
-      const channelList = Object.values(info.channels).sort((x, y) => y.points - x.points);
-      if (channelList.length === 0) {
-        html += '<tr class="channel-row"><td></td><td class="channel-name points loading">no channel data found yet</td><td></td><td></td><td></td></tr>';
-      } else {
-        channelList.forEach(ch => {
-          html += '<tr class="channel-row">' +
-            '<td></td>' +
-            '<td class="channel-name">' + ch.name + '</td>' +
-            '<td></td>' +
-            '<td><span class="points">' + ch.points.toLocaleString() + '</span></td>' +
-            '<td></td>' +
-            '</tr>';
-        });
-      }
-    }
+    html += `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${account}</td>
+        <td>${entries.map(c => c[0]).join(", ")}</td>
+        <td>${accountPoints.toLocaleString()}</td>
+        <td><span class="badge ok">live</span></td>
+      </tr>
+    `;
   });
 
-  document.getElementById('tableBody').innerHTML = html;
+  document.getElementById("body").innerHTML = html;
+  document.getElementById("totalAccounts").innerText = count;
+  document.getElementById("totalPoints").innerText = totalPoints.toLocaleString();
 }
 
-function accountTotal(twitch) {
-  const info = pointsData[twitch];
-  if (!info || !info.channels) return 0;
-  return Object.values(info.channels).reduce((s, c) => s + c.points, 0);
-}
+// 🔥 AUTO REFRESH
+load();
+setInterval(load, 5000);
 
-function updateStats() {
-  let total = 0;
-  Object.values(pointsData).forEach(info => {
-    if (info && info.channels) {
-      Object.values(info.channels).forEach(c => { total += c.points; });
-    }
-  });
-  document.getElementById('totalPoints').textContent = total ? total.toLocaleString() : '—';
-}
-
-function sortByPoints() {
-  sortAsc = !sortAsc;
-  ACCOUNTS.sort((a, b) => {
-    const pa = accountTotal(a.twitch);
-    const pb = accountTotal(b.twitch);
-    return sortAsc ? pa - pb : pb - pa;
-  });
-  renderTable();
-}
-
-function resetCountdown() {
-  countdown = 600;
-  clearInterval(countdownInterval);
-  const fill = document.getElementById('progressFill');
-  countdownInterval = setInterval(() => {
-    countdown--;
-    const m = Math.floor(countdown / 60);
-    const s = String(countdown % 60).padStart(2, '0');
-    document.getElementById('timer').textContent = 'Next refresh in ' + m + ':' + s;
-    fill.style.width = Math.round(countdown / 600 * 100) + '%';
-    if (countdown <= 0) { clearInterval(countdownInterval); refreshAll(); }
-  }, 1000);
-}
-
-renderTable();
-resetCountdown();
-discoverServices().then(() => refreshAll());
 </script>
+
 </body>
 </html>
