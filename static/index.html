@@ -40,6 +40,12 @@
   .badge-unknown { background: #2a2a35; color: #5a5a6e; }
   .streamer-cell { font-size: 11px; color: #adadb8; }
   .render-email { font-size: 11px; color: #5a5a6e; }
+  .account-row td { background: #18181b; }
+  .account-row:hover td { background: #20202a; }
+  .channel-row td { padding-top: 8px; padding-bottom: 8px; }
+  .channel-name { color: #adadb8; font-size: 13px; padding-left: 18px; position: relative; }
+  .channel-name::before { content: '↳'; position: absolute; left: 0; color: #4a4a5e; }
+  .channel-row:last-of-type td { border-bottom: 0.5px solid #2a2a35; }
   .spin { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .progress-bar { height: 2px; background: #2a2a35; border-radius: 1px; margin-bottom: 16px; overflow: hidden; }
@@ -80,9 +86,8 @@
   <thead>
     <tr>
       <th>#</th>
-      <th>Twitch account</th>
+      <th>Web service / channel</th>
       <th>Render email</th>
-      <th>Farming</th>
       <th class="sortable" onclick="sortByPoints()">Channel points &#8597;</th>
       <th>Status</th>
     </tr>
@@ -161,25 +166,43 @@ async function discoverServices() {
   }
 }
 
-async function fetchPointsFromLogs(serviceId, ownerId) {
+// Words that tend to false-positive against the generic "name: number" pattern
+// (HTTP/log noise rather than actual streamer names).
+const IGNORE_WORDS = new Set([
+  'status','error','info','warn','warning','debug','code','port','time','date',
+  'line','level','http','get','post','put','delete','host','path','method',
+  'request','response','build','deploy','version','env','id','user','users',
+  'second','seconds','minute','minutes','hour','hours','retry','retries','attempt'
+]);
+
+// Scans a service's logs and pulls out every "<channel name>: <points>" style
+// pair it can find, with no fixed list of expected channel names - so brand
+// new streamers on a brand new service get picked up automatically.
+async function extractChannelsFromLogs(serviceId, ownerId) {
+  const channels = {}; // lowercased name -> { name, points }
   try {
     const r = await fetch('/api/logs/' + serviceId + '?ownerId=' + encodeURIComponent(ownerId));
     const logs = await r.json();
     const entries = Array.isArray(logs) ? logs : (logs.logs || []);
+    const pattern = /([A-Za-z][A-Za-z0-9_]{2,24})\s*[:\-–>]{1,3}\s*([\d][\d,]{0,9})(?:\s*points?)?/gi;
+    // Walk newest -> oldest so the first match we see per channel is its latest value.
     for (let i = entries.length - 1; i >= 0; i--) {
       const line = entries[i].message || entries[i].text || entries[i].log || '';
-      const m = line.match(/[-–>]+\s*([\d,]+)/)
-             || line.match(/\b(\d{4,}[\d,]*)\s*points?/i)
-             || line.match(/🏆[^0-9]*([\d,]+)/);
-      if (m) {
-        const pts = parseInt(m[1].replace(/,/g, ''));
-        if (pts > 100) return pts;
+      let m;
+      pattern.lastIndex = 0;
+      while ((m = pattern.exec(line)) !== null) {
+        const name = m[1];
+        const key = name.toLowerCase();
+        if (IGNORE_WORDS.has(key) || key in channels) continue;
+        const pts = parseInt(m[2].replace(/,/g, ''));
+        if (isNaN(pts)) continue;
+        channels[key] = { name, points: pts };
       }
     }
-    return null;
   } catch(e) {
-    return null;
+    // leave channels empty - rendered as "no channel data found yet"
   }
+  return channels;
 }
 
 async function refreshAll() {
@@ -199,11 +222,11 @@ async function refreshAll() {
     await Promise.all(batch.map(async (a) => {
       const svcInfo = serviceIds[a.twitch.toLowerCase()];
       if (!svcInfo) {
-        pointsData[a.twitch] = { points: null, notFound: true };
+        pointsData[a.twitch] = { channels: {}, notFound: true };
         return;
       }
-      const pts = await fetchPointsFromLogs(svcInfo.id, svcInfo.ownerId);
-      pointsData[a.twitch] = { points: pts };
+      const channels = await extractChannelsFromLogs(svcInfo.id, svcInfo.ownerId);
+      pointsData[a.twitch] = { channels };
     }));
     renderTable();
   }
@@ -217,50 +240,82 @@ async function refreshAll() {
 
 function renderTable() {
   const search = document.getElementById('search').value.toLowerCase();
-  const rows = ACCOUNTS.filter(a =>
-    a.twitch.toLowerCase().includes(search) ||
-    a.render.toLowerCase().includes(search) ||
-    a.streamers.toLowerCase().includes(search)
-  );
-  document.getElementById('totalAccounts').textContent = rows.length;
-  document.getElementById('tableBody').innerHTML = rows.map((a, i) => {
+  const rows = ACCOUNTS.filter(a => {
     const info = pointsData[a.twitch];
-    let pts, status;
+    const channelNames = info && info.channels ? Object.values(info.channels).map(c => c.name.toLowerCase()) : [];
+    return a.twitch.toLowerCase().includes(search) ||
+           a.render.toLowerCase().includes(search) ||
+           channelNames.some(n => n.includes(search));
+  });
+  document.getElementById('totalAccounts').textContent = rows.length;
+
+  let html = '';
+  rows.forEach((a, i) => {
+    const info = pointsData[a.twitch];
+    let statusBadge;
     if (!info) {
-      pts = '<span class="points loading">fetching...</span>';
-      status = '<span class="badge badge-unknown">—</span>';
+      statusBadge = '<span class="badge badge-unknown">—</span>';
     } else if (info.notFound) {
-      pts = '<span class="points error">service not found</span>';
-      status = '<span class="badge badge-unknown">—</span>';
+      statusBadge = '<span class="badge badge-unknown">—</span>';
     } else {
-      pts = info.points != null
-        ? '<span class="points">' + info.points.toLocaleString() + '</span>'
-        : '<span class="points loading">no data yet</span>';
-      status = '<span class="badge badge-running">running</span>';
+      statusBadge = '<span class="badge badge-running">running</span>';
     }
-    return '<tr>' +
+
+    html += '<tr class="account-row">' +
       '<td class="num">' + (i + 1) + '</td>' +
       '<td><div class="twitch-name">' + a.twitch + '</div>' +
         '<a class="twitch-link" href="https://twitch.tv/' + a.twitch + '" target="_blank">twitch.tv/' + a.twitch + '</a></td>' +
       '<td class="render-email">' + a.render + '</td>' +
-      '<td class="streamer-cell">' + a.streamers + '</td>' +
-      '<td>' + pts + '</td>' +
-      '<td>' + status + '</td>' +
+      '<td></td>' +
+      '<td>' + statusBadge + '</td>' +
       '</tr>';
-  }).join('');
+
+    if (!info) {
+      html += '<tr class="channel-row"><td></td><td class="channel-name">fetching...</td><td></td><td></td><td></td></tr>';
+    } else if (info.notFound) {
+      html += '<tr class="channel-row"><td></td><td class="channel-name points error">service not found</td><td></td><td></td><td></td></tr>';
+    } else {
+      const channelList = Object.values(info.channels).sort((x, y) => y.points - x.points);
+      if (channelList.length === 0) {
+        html += '<tr class="channel-row"><td></td><td class="channel-name points loading">no channel data found yet</td><td></td><td></td><td></td></tr>';
+      } else {
+        channelList.forEach(ch => {
+          html += '<tr class="channel-row">' +
+            '<td></td>' +
+            '<td class="channel-name">' + ch.name + '</td>' +
+            '<td></td>' +
+            '<td><span class="points">' + ch.points.toLocaleString() + '</span></td>' +
+            '<td></td>' +
+            '</tr>';
+        });
+      }
+    }
+  });
+
+  document.getElementById('tableBody').innerHTML = html;
+}
+
+function accountTotal(twitch) {
+  const info = pointsData[twitch];
+  if (!info || !info.channels) return 0;
+  return Object.values(info.channels).reduce((s, c) => s + c.points, 0);
 }
 
 function updateStats() {
-  const vals = Object.values(pointsData);
-  const total = vals.reduce((s, d) => s + (d.points || 0), 0);
+  let total = 0;
+  Object.values(pointsData).forEach(info => {
+    if (info && info.channels) {
+      Object.values(info.channels).forEach(c => { total += c.points; });
+    }
+  });
   document.getElementById('totalPoints').textContent = total ? total.toLocaleString() : '—';
 }
 
 function sortByPoints() {
   sortAsc = !sortAsc;
   ACCOUNTS.sort((a, b) => {
-    const pa = (pointsData[a.twitch] || {}).points || 0;
-    const pb = (pointsData[b.twitch] || {}).points || 0;
+    const pa = accountTotal(a.twitch);
+    const pb = accountTotal(b.twitch);
     return sortAsc ? pa - pb : pb - pa;
   });
   renderTable();
