@@ -1,6 +1,7 @@
 import os
 import requests
-from flask import Flask, jsonify, send_from_directory
+from datetime import datetime, timedelta, timezone
+from flask import Flask, jsonify, send_from_directory, request
 
 app = Flask(__name__, static_folder='static')
 
@@ -17,34 +18,71 @@ def get_services():
         key = key.strip()
         if not key:
             continue
-        try:
-            r = requests.get('https://api.render.com/v1/services?limit=100', headers={
-                'Authorization': f'Bearer {key}',
-                'Accept': 'application/json'
-            })
-            data = r.json()
-            if isinstance(data, list):
-                for item in data:
-                    svc = item.get('service') or item
-                    if svc.get('id') and svc.get('name'):
-                        all_services.append({'id': svc['id'], 'name': svc['name']})
-        except Exception as e:
-            print(f'Error fetching services: {e}')
+        cursor = None
+        while True:
+            params = {'limit': 100}
+            if cursor:
+                params['cursor'] = cursor
+            try:
+                r = requests.get('https://api.render.com/v1/services', headers={
+                    'Authorization': f'Bearer {key}',
+                    'Accept': 'application/json'
+                }, params=params)
+                data = r.json()
+            except Exception as e:
+                print(f'Error fetching services: {e}')
+                break
+            if not isinstance(data, list) or not data:
+                break
+            for item in data:
+                svc = item.get('service') or item
+                if svc.get('id') and svc.get('name'):
+                    # ownerId is required so the logs endpoint knows which
+                    # workspace to query - the old code dropped this.
+                    all_services.append({
+                        'id': svc['id'],
+                        'name': svc['name'],
+                        'ownerId': svc.get('ownerId')
+                    })
+            cursor = item.get('cursor')
+            if not cursor or len(data) < 100:
+                break
     return jsonify(all_services)
 
 @app.route('/api/logs/<service_id>')
 def get_logs(service_id):
+    # The Render API has no /services/{id}/logs route - that was the bug.
+    # Logs are queried from a single global endpoint, filtered by
+    # ownerId (workspace) + resource (service id).
+    owner_id = request.args.get('ownerId')
+    if not owner_id:
+        return jsonify([])
+
+    start_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
     for key in RENDER_API_KEYS:
         key = key.strip()
         if not key:
             continue
         try:
-            r = requests.get(f'https://api.render.com/v1/services/{service_id}/logs?limit=200', headers={
+            r = requests.get('https://api.render.com/v1/logs', headers={
                 'Authorization': f'Bearer {key}',
                 'Accept': 'application/json'
+            }, params={
+                'ownerId': owner_id,
+                'resource': [service_id],
+                'type': ['app'],
+                'direction': 'backward',  # most recent logs first
+                'startTime': start_time,
+                'limit': 100,
             })
             if r.status_code == 200:
-                return jsonify(r.json())
+                data = r.json()
+                logs = data.get('logs', [])
+                logs.reverse()  # oldest-first so the most recent line is last
+                return jsonify(logs)
+            elif r.status_code not in (401, 403, 404):
+                print(f'Logs request for {service_id} failed ({r.status_code}): {r.text[:300]}')
         except Exception as e:
             print(f'Error fetching logs: {e}')
     return jsonify([])
