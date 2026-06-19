@@ -166,14 +166,18 @@ async function fetchPointsFromLogs(serviceId) {
     const r = await fetch('/api/logs/' + serviceId);
     const logs = await r.json();
     const entries = Array.isArray(logs) ? logs : (logs.logs || []);
+    // Search newest to oldest for most recent point total
     for (let i = entries.length - 1; i >= 0; i--) {
       const line = entries[i].message || entries[i].text || entries[i].log || '';
-      const m = line.match(/[-–>]+\s*([\d,]+)/)
-             || line.match(/\b(\d{4,}[\d,]*)\s*points?/i)
-             || line.match(/🏆[^0-9]*([\d,]+)/);
+      // Match channel_points=4.31k or channel_points=870
+      const m = line.match(/channel_points=([\d.]+)([km]?)/i);
       if (m) {
-        const pts = parseInt(m[1].replace(/,/g, ''));
-        if (pts > 100) return pts;
+        let val = parseFloat(m[1]);
+        const suffix = (m[2] || '').toLowerCase();
+        if (suffix === 'k') val = Math.round(val * 1000);
+        else if (suffix === 'm') val = Math.round(val * 1000000);
+        else val = Math.round(val);
+        if (val > 0) return val;
       }
     }
     return null;
