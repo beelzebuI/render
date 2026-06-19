@@ -21,37 +21,33 @@
   .timer { font-size: 12px; color: #adadb8; }
   .search { background: #1f1f23; border: 0.5px solid #2a2a35; color: #efeff1; padding: 8px 12px; border-radius: 6px; font-size: 13px; width: 200px; outline: none; }
   .search::placeholder { color: #5a5a6e; }
+  table { width: 100%; border-collapse: collapse; background: #1f1f23; border-radius: 10px; overflow: hidden; border: 0.5px solid #2a2a35; }
+  thead { background: #18181b; }
+  th { text-align: left; padding: 10px 16px; font-size: 11px; font-weight: 600; color: #adadb8; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid #2a2a35; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: #efeff1; }
+  td { padding: 10px 16px; font-size: 13px; border-bottom: 0.5px solid #18181b; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #26262c; }
+  .twitch-name { font-weight: 500; color: #efeff1; }
+  .twitch-link { color: #9147ff; text-decoration: none; font-size: 11px; }
+  .twitch-link:hover { text-decoration: underline; }
+  .points { font-weight: 600; font-size: 14px; color: #fff; font-variant-numeric: tabular-nums; }
+  .points.loading { color: #5a5a6e; font-weight: 400; font-size: 12px; }
+  .points.error { color: #eb0400; font-weight: 400; font-size: 12px; }
+  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
+  .badge-running { background: #0f6e56; color: #e1f5ee; }
+  .badge-unknown { background: #2a2a35; color: #5a5a6e; }
+  .streamer-cell { font-size: 11px; color: #adadb8; }
+  .render-email { font-size: 11px; color: #5a5a6e; }
   .spin { display: inline-block; animation: spin 1s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .progress-bar { height: 2px; background: #2a2a35; border-radius: 1px; margin-bottom: 16px; overflow: hidden; }
   .progress-fill { height: 100%; background: #9147ff; border-radius: 1px; transition: width 1s linear; }
+  .num { color: #5a5a6e; font-size: 11px; }
   .status-bar { background: #1f1f23; border: 0.5px solid #2a2a35; border-radius: 8px; padding: 10px 16px; margin-bottom: 16px; font-size: 12px; color: #adadb8; }
   .status-bar.error { border-color: #eb0400; color: #eb0400; }
   .status-bar.ok { border-color: #0f6e56; color: #57e5b4; }
-  .num { color: #5a5a6e; font-size: 11px; }
-
-  /* Account cards */
-  .accounts-grid { display: flex; flex-direction: column; gap: 16px; }
-  .account-card { background: #1f1f23; border: 0.5px solid #2a2a35; border-radius: 10px; overflow: hidden; }
-  .account-header { background: #18181b; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 0.5px solid #2a2a35; }
-  .account-name { font-weight: 600; font-size: 14px; color: #efeff1; }
-  .account-email { font-size: 11px; color: #5a5a6e; margin-top: 2px; }
-  .account-total { font-size: 12px; color: #adadb8; }
-  .account-total span { color: #9147ff; font-weight: 600; }
-  .streamers-table { width: 100%; border-collapse: collapse; }
-  .streamers-table td { padding: 8px 16px; font-size: 13px; border-bottom: 0.5px solid #18181b; }
-  .streamers-table tr:last-child td { border-bottom: none; }
-  .streamers-table tr:hover td { background: #26262c; }
-  .streamer-name { color: #9147ff; font-weight: 500; }
-  .streamer-name a { color: #9147ff; text-decoration: none; }
-  .streamer-name a:hover { text-decoration: underline; }
-  .pts { font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
-  .pts.loading { color: #5a5a6e; font-weight: 400; font-size: 12px; }
-  .pts.none { color: #5a5a6e; font-weight: 400; font-size: 12px; }
-  .badge { display: inline-block; font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 500; }
-  .badge-running { background: #0f6e56; color: #e1f5ee; }
-  .badge-error { background: #3a1010; color: #eb0400; }
-  .hidden { display: none; }
 </style>
 </head>
 <body>
@@ -62,7 +58,7 @@
     <div class="subtitle">All accounts — auto-refreshes every 10 minutes</div>
   </div>
   <div class="controls">
-    <input class="search" type="text" id="search" placeholder="Search accounts..." oninput="filterCards()">
+    <input class="search" type="text" id="search" placeholder="Search accounts..." oninput="renderTable()">
     <span class="timer" id="timer">Next refresh in 10:00</span>
     <button class="refresh-btn" id="refreshBtn" onclick="refreshAll()">
       <span id="refreshIcon">&#8635;</span> Refresh all
@@ -71,21 +67,75 @@
 </div>
 
 <div class="stats">
-  <div class="stat"><div class="stat-label">Accounts</div><div class="stat-value" id="statAccounts">—</div></div>
-  <div class="stat"><div class="stat-label">Total points</div><div class="stat-value" id="statTotal">—</div></div>
-  <div class="stat"><div class="stat-label">Services found</div><div class="stat-value" id="statServices">—</div></div>
-  <div class="stat"><div class="stat-label">Last updated</div><div class="stat-value" id="statUpdated" style="font-size:14px">—</div></div>
+  <div class="stat"><div class="stat-label">Total accounts</div><div class="stat-value" id="totalAccounts">—</div></div>
+  <div class="stat"><div class="stat-label">Total points</div><div class="stat-value" id="totalPoints">—</div></div>
+  <div class="stat"><div class="stat-label">Services found</div><div class="stat-value" id="servicesFound">—</div></div>
+  <div class="stat"><div class="stat-label">Last updated</div><div class="stat-value" id="lastUpdated" style="font-size:14px">—</div></div>
 </div>
 
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:100%"></div></div>
 <div class="status-bar" id="statusBar">Connecting to Render...</div>
 
-<div class="accounts-grid" id="accountsGrid"></div>
+<table>
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Twitch account</th>
+      <th>Render email</th>
+      <th>Farming</th>
+      <th class="sortable" onclick="sortByPoints()">Channel points &#8597;</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody id="tableBody"></tbody>
+</table>
 
 <script>
-// accountsData: twitch username -> { email, streamers: { streamerName -> points } }
-let accountsData = {};
+const ACCOUNTS = [
+  { render: "zanxzanx70@gmail.com",        twitch: "beelzebul7612",       streamers: "Imshayph, Sirdapper, Waffletrades_" },
+  { render: "zanxzanx70@gmail.com",        twitch: "beelzebul121212",     streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx70+1@gmail.com",      twitch: "avenger000000424",    streamers: "Waffletrades, Imshayph, Sirdapper" },
+  { render: "zanxzanx70+1@gmail.com",      twitch: "vampireking522",       streamers: "Waffletrades, Imshayph, Sirdapper" },
+  { render: "zanxzanx70+2@gmail.com",      twitch: "ryangarciafan3133",    streamers: "Sirdapper, Imshayph, Waffletrades_" },
+  { render: "zanxzanx70+2@gmail.com",      twitch: "discorduser0313no1",   streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+2@gmail.com",      twitch: "CoffeeWithChris89",    streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx71+2@gmail.com",      twitch: "LunarBrandon42",       streamers: "Waffletrades, Imshayph, Sirdapper" },
+  { render: "zanxzanx71+3@gmail.com",      twitch: "SilentMikey16",        streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx71+3@gmail.com",      twitch: "TylerRespawns33",      streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx71+4@gmail.com",      twitch: "FrostyEthan25",        streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx71+4@gmail.com",      twitch: "MasonStreams08",        streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "zanxzanx71+5@gmail.com",      twitch: "DevinOnline64",         streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+5@gmail.com",      twitch: "RetroHunterJay91",      streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+6@gmail.com",      twitch: "JustCallMeNick12",      streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+6@gmail.com",      twitch: "LoganUnlocked73",       streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+7@gmail.com",      twitch: "MidnightTrey44",        streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+7@gmail.com",      twitch: "AlexAfterDark19",       streamers: "Sirdapper, Imshayph, Waffletrades" },
+  { render: "zanxzanx71+8@gmail.com",      twitch: "NoahLevelsUp56",        streamers: "Waffletrades, Imshayph, Sirdapper" },
+  { render: "zanxzanx71+8@gmail.com",      twitch: "ZachPlaysGames82",      streamers: "Waffletrades, Imshayph, Sirdapper" },
+  { render: "stephendavis664+1@gmail.com", twitch: "kjnjnl",                streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+1@gmail.com", twitch: "beelzebullll1",         streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+2@gmail.com", twitch: "jamesrandol121",        streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+2@gmail.com", twitch: "davidgogin21212",       streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+3@gmail.com", twitch: "damianmadness",         streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+3@gmail.com", twitch: "gavindanold313",        streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+4@gmail.com", twitch: "jameylondon13131",      streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+4@gmail.com", twitch: "david1133131313",       streamers: "Imshayph, Sirdapper, Waffletrades" },
+  { render: "stephendavis664+5@gmail.com", twitch: "michalchandler1313",    streamers: "Copieburger, Ourasil, Imshayph" },
+  { render: "stephendavis664+5@gmail.com", twitch: "lebronjames33131",      streamers: "Copieburger, Ourasil, Imshayph" },
+  { render: "stephendavis664+6@gmail.com", twitch: "mikeypersek3113",       streamers: "Copieburger, Ourasil, Imshayph" },
+  { render: "stephendavis664+6@gmail.com", twitch: "growagarden221",        streamers: "Copieburger, Ourasil, Imshayph" },
+  { render: "stephendavis664+7@gmail.com", twitch: "increadiblehulk31313",  streamers: "Copieburger, Ourasil, Sirdapper" },
+  { render: "stephendavis664+7@gmail.com", twitch: "spiderman33j313",       streamers: "Copieburger, Ourasil, Sirdapper" },
+  { render: "zanxzanx70+3@gmail.com",      twitch: "PixelMason27",          streamers: "leon10lu_" },
+  { render: "zanxzanx70+4@gmail.com",      twitch: "RyanPlays9822",         streamers: "Imshayph" },
+  { render: "zanxzanx70+5@gmail.com",      twitch: "NorthsideNate21",       streamers: "Sirdapper" },
+  { render: "zanxzanx71@gmail.com",        twitch: "CasualCarter14",        streamers: "Sirdapper" },
+  { render: "zanxzanx71+1@gmail.com",      twitch: "JakeOnKeyboard77",      streamers: "leon10lu_" },
+];
+
+let pointsData = {};
 let serviceIds = {};
+let sortAsc = false;
 let countdown = 600;
 let countdownInterval = null;
 
@@ -99,47 +149,34 @@ async function discoverServices() {
   try {
     const r = await fetch('/api/services');
     const data = await r.json();
-    data.forEach(svc => { serviceIds[svc.name.toLowerCase()] = svc.id; });
-    document.getElementById('statServices').textContent = data.length;
-    setStatus('Connected — found ' + data.length + ' services.', 'ok');
+    data.forEach(svc => {
+      serviceIds[svc.name.toLowerCase()] = { id: svc.id, ownerId: svc.ownerId };
+    });
+    document.getElementById('servicesFound').textContent = data.length;
+    setStatus('Connected — found ' + data.length + ' services across all Render accounts.', 'ok');
     return true;
   } catch(e) {
-    setStatus('Failed to connect: ' + e.message, 'error');
+    setStatus('Failed to connect to Render API: ' + e.message, 'error');
     return false;
   }
 }
 
-function parsePoints(val, suffix) {
-  let n = parseFloat(val);
-  const s = (suffix || '').toLowerCase();
-  if (s === 'k') n = Math.round(n * 1000);
-  else if (s === 'm') n = Math.round(n * 1000000);
-  else n = Math.round(n);
-  return n;
-}
-
-async function fetchServiceData(serviceId) {
-  // Returns { twitchUser, email, streamers: { name -> points } } or null
+async function fetchPointsFromLogs(serviceId, ownerId) {
   try {
-    const r = await fetch('/api/logs/' + serviceId);
+    const r = await fetch('/api/logs/' + serviceId + '?ownerId=' + encodeURIComponent(ownerId));
     const logs = await r.json();
     const entries = Array.isArray(logs) ? logs : (logs.logs || []);
-
-    // Parse all lines, build per-streamer latest points
-    // Log format: channel_points=4.31k) ... username=imshayph
-    const streamerPoints = {};
-    for (const entry of entries) {
-      const line = entry.message || entry.text || entry.log || '';
-      // Match: username=xxx, channel_points=yyy
-      const um = line.match(/username=([a-zA-Z0-9_]+)/);
-      const pm = line.match(/channel_points=([\d.]+)([km]?)/i);
-      if (um && pm) {
-        const streamer = um[1].toLowerCase();
-        const pts = parsePoints(pm[1], pm[2]);
-        if (pts > 0) streamerPoints[streamer] = pts; // keep latest (last wins as we go forward)
+    for (let i = entries.length - 1; i >= 0; i--) {
+      const line = entries[i].message || entries[i].text || entries[i].log || '';
+      const m = line.match(/[-–>]+\s*([\d,]+)/)
+             || line.match(/\b(\d{4,}[\d,]*)\s*points?/i)
+             || line.match(/🏆[^0-9]*([\d,]+)/);
+      if (m) {
+        const pts = parseInt(m[1].replace(/,/g, ''));
+        if (pts > 100) return pts;
       }
     }
-    return streamerPoints;
+    return null;
   } catch(e) {
     return null;
   }
@@ -156,74 +193,77 @@ async function refreshAll() {
     if (!ok) { btn.disabled = false; icon.classList.remove('spin'); return; }
   }
 
-  const serviceNames = Object.keys(serviceIds);
   const BATCH = 5;
-
-  for (let i = 0; i < serviceNames.length; i += BATCH) {
-    const batch = serviceNames.slice(i, i + BATCH);
-    await Promise.all(batch.map(async (name) => {
-      const id = serviceIds[name];
-      const streamerPoints = await fetchServiceData(id);
-      if (!accountsData[name]) accountsData[name] = { streamers: {}, notFound: false };
-      if (streamerPoints === null) {
-        accountsData[name].error = true;
-      } else {
-        accountsData[name].streamers = streamerPoints;
-        accountsData[name].error = false;
+  for (let i = 0; i < ACCOUNTS.length; i += BATCH) {
+    const batch = ACCOUNTS.slice(i, i + BATCH);
+    await Promise.all(batch.map(async (a) => {
+      const svcInfo = serviceIds[a.twitch.toLowerCase()];
+      if (!svcInfo) {
+        pointsData[a.twitch] = { points: null, notFound: true };
+        return;
       }
+      const pts = await fetchPointsFromLogs(svcInfo.id, svcInfo.ownerId);
+      pointsData[a.twitch] = { points: pts };
     }));
-    renderCards();
+    renderTable();
   }
 
   updateStats();
-  document.getElementById('statUpdated').textContent = new Date().toLocaleTimeString();
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
   btn.disabled = false;
   icon.classList.remove('spin');
   resetCountdown();
 }
 
-function renderCards() {
+function renderTable() {
   const search = document.getElementById('search').value.toLowerCase();
-  const grid = document.getElementById('accountsGrid');
-  const names = Object.keys(accountsData).sort();
-
-  grid.innerHTML = names.map(name => {
-    if (search && !name.includes(search)) return '';
-    const acct = accountsData[name];
-    const streamers = acct.streamers || {};
-    const streamerNames = Object.keys(streamers).sort();
-    const total = Object.values(streamers).reduce((s, v) => s + v, 0);
-
-    const rows = streamerNames.length === 0
-      ? '<tr><td colspan="2" class="pts none">' + (acct.error ? 'error fetching logs' : 'no data yet') + '</td></tr>'
-      : streamerNames.map(s => `
-          <tr>
-            <td class="streamer-name"><a href="https://twitch.tv/${s}" target="_blank">${s}</a></td>
-            <td class="pts">${streamers[s].toLocaleString()}</td>
-          </tr>`).join('');
-
-    return `
-      <div class="account-card">
-        <div class="account-header">
-          <div>
-            <div class="account-name">${name}</div>
-          </div>
-          <div class="account-total">Total: <span>${total ? total.toLocaleString() : '—'}</span></div>
-        </div>
-        <table class="streamers-table">${rows}</table>
-      </div>`;
+  const rows = ACCOUNTS.filter(a =>
+    a.twitch.toLowerCase().includes(search) ||
+    a.render.toLowerCase().includes(search) ||
+    a.streamers.toLowerCase().includes(search)
+  );
+  document.getElementById('totalAccounts').textContent = rows.length;
+  document.getElementById('tableBody').innerHTML = rows.map((a, i) => {
+    const info = pointsData[a.twitch];
+    let pts, status;
+    if (!info) {
+      pts = '<span class="points loading">fetching...</span>';
+      status = '<span class="badge badge-unknown">—</span>';
+    } else if (info.notFound) {
+      pts = '<span class="points error">service not found</span>';
+      status = '<span class="badge badge-unknown">—</span>';
+    } else {
+      pts = info.points != null
+        ? '<span class="points">' + info.points.toLocaleString() + '</span>'
+        : '<span class="points loading">no data yet</span>';
+      status = '<span class="badge badge-running">running</span>';
+    }
+    return '<tr>' +
+      '<td class="num">' + (i + 1) + '</td>' +
+      '<td><div class="twitch-name">' + a.twitch + '</div>' +
+        '<a class="twitch-link" href="https://twitch.tv/' + a.twitch + '" target="_blank">twitch.tv/' + a.twitch + '</a></td>' +
+      '<td class="render-email">' + a.render + '</td>' +
+      '<td class="streamer-cell">' + a.streamers + '</td>' +
+      '<td>' + pts + '</td>' +
+      '<td>' + status + '</td>' +
+      '</tr>';
   }).join('');
 }
 
-function filterCards() { renderCards(); }
-
 function updateStats() {
-  const names = Object.keys(accountsData);
-  document.getElementById('statAccounts').textContent = names.length;
-  const grand = Object.values(accountsData).reduce((s, a) => {
-    return s + Object.values(a.streamers || {}).reduce((ss, v) => ss + v, 0);
-  }, 0);
-  document.getElementById('statTotal').textContent = grand ? grand.toLocaleString() : '—';
+  const vals = Object.values(pointsData);
+  const total = vals.reduce((s, d) => s + (d.points || 0), 0);
+  document.getElementById('totalPoints').textContent = total ? total.toLocaleString() : '—';
+}
+
+function sortByPoints() {
+  sortAsc = !sortAsc;
+  ACCOUNTS.sort((a, b) => {
+    const pa = (pointsData[a.twitch] || {}).points || 0;
+    const pb = (pointsData[b.twitch] || {}).points || 0;
+    return sortAsc ? pa - pb : pb - pa;
+  });
+  renderTable();
 }
 
 function resetCountdown() {
@@ -240,6 +280,7 @@ function resetCountdown() {
   }, 1000);
 }
 
+renderTable();
 resetCountdown();
 discoverServices().then(() => refreshAll());
 </script>
