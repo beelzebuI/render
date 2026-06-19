@@ -58,33 +58,61 @@ def get_logs(service_id):
     if not owner_id:
         return jsonify([])
 
-    start_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    # The points-miner only logs a streamer's line when its state changes
+    # (e.g. going online/offline), so a quiet/offline streamer's last known
+    # points can sit well outside a 1-page, 24-hour window. Render's free
+    # plan keeps 7 days of logs, so search that whole range, paging back
+    # through it as needed (capped to stay well under the API's 30/min
+    # rate limit for GET /v1/logs).
+    MAX_PAGES = 5
+    window_start = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    window_end = datetime.now(timezone.utc).isoformat()
 
     for key in RENDER_API_KEYS:
         key = key.strip()
         if not key:
             continue
-        try:
-            r = requests.get('https://api.render.com/v1/logs', headers={
-                'Authorization': f'Bearer {key}',
-                'Accept': 'application/json'
-            }, params={
-                'ownerId': owner_id,
-                'resource': [service_id],
-                'type': ['app'],
-                'direction': 'backward',  # most recent logs first
-                'startTime': start_time,
-                'limit': 100,
-            })
-            if r.status_code == 200:
-                data = r.json()
-                logs = data.get('logs', [])
-                logs.reverse()  # oldest-first so the most recent line is last
-                return jsonify(logs)
-            elif r.status_code not in (401, 403, 404):
-                print(f'Logs request for {service_id} failed ({r.status_code}): {r.text[:300]}')
-        except Exception as e:
-            print(f'Error fetching logs: {e}')
+
+        all_logs = []
+        cur_start, cur_end = window_start, window_end
+        matched_key = False
+
+        for _ in range(MAX_PAGES):
+            try:
+                r = requests.get('https://api.render.com/v1/logs', headers={
+                    'Authorization': f'Bearer {key}',
+                    'Accept': 'application/json'
+                }, params={
+                    'ownerId': owner_id,
+                    'resource': [service_id],
+                    'type': ['app'],
+                    'direction': 'backward',  # most recent logs first
+                    'startTime': cur_start,
+                    'endTime': cur_end,
+                    'limit': 100,
+                })
+            except Exception as e:
+                print(f'Error fetching logs: {e}')
+                break
+
+            if r.status_code != 200:
+                if r.status_code not in (401, 403, 404):
+                    print(f'Logs request for {service_id} failed ({r.status_code}): {r.text[:300]}')
+                break
+
+            matched_key = True
+            data = r.json()
+            all_logs.extend(data.get('logs', []))
+
+            if not data.get('hasMore'):
+                break
+            cur_start = data.get('nextStartTime') or cur_start
+            cur_end = data.get('nextEndTime') or cur_end
+
+        if matched_key:
+            all_logs.reverse()  # oldest-first so the most recent line is last
+            return jsonify(all_logs)
+
     return jsonify([])
 
 if __name__ == '__main__':
