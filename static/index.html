@@ -3,468 +3,827 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Twitch Points Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<title>Points Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a0a0f;
-  --surface:#111117;
-  --surface2:#16161e;
-  --surface3:#1c1c26;
-  --border:#1e1e2a;
-  --border2:#2a2a38;
+  --bg:#07070c;
+  --s1:#0e0e16;
+  --s2:#13131d;
+  --s3:#191924;
+  --s4:#1f1f2e;
+  --b1:#1a1a28;
+  --b2:#252538;
+  --b3:#303048;
   --purple:#9147ff;
-  --purple-dim:#5c2fa0;
-  --purple-glow:rgba(145,71,255,0.15);
-  --green:#00c97a;
-  --green-dim:rgba(0,201,122,0.12);
-  --red:#f04747;
-  --red-dim:rgba(240,71,71,0.1);
-  --yellow:#f5a623;
-  --text:#e8e8f0;
-  --muted:#52526a;
-  --muted2:#8080a0;
+  --purple2:#7c3aed;
+  --purple3:#5b21b6;
+  --pglow:rgba(145,71,255,0.2);
+  --green:#10b981;
+  --gdim:rgba(16,185,129,0.12);
+  --red:#ef4444;
+  --rdim:rgba(239,68,68,0.1);
+  --yellow:#f59e0b;
+  --blue:#3b82f6;
+  --text:#f1f0f8;
+  --text2:#c4c3d4;
+  --muted:#5a5a78;
+  --muted2:#7878a0;
   --mono:'JetBrains Mono',monospace;
-  --radius:8px;
+  --r:8px;
+  --r2:12px;
 }
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 20px}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-/* HEADER */
-header{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
-.logo{width:32px;height:32px;background:var(--purple);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.logo svg{width:18px;height:18px;fill:white}
-.header-title{font-size:15px;font-weight:600;letter-spacing:-0.2px}
-.header-sub{font-size:11px;color:var(--muted);margin-top:1px}
-.header-stats{margin-left:auto;display:flex;align-items:center;gap:16px}
-.hstat{text-align:right}
-.hstat-val{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--text)}
-.hstat-label{font-size:10px;color:var(--muted);margin-top:1px}
-.hstat.warn .hstat-val{color:var(--red)}
-.pulse-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+/* LAYOUT */
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b1);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.2s}
+.main{margin-left:220px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+.topbar{background:var(--s1);border-bottom:1px solid var(--b1);padding:12px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.content{padding:20px;flex:1}
 
-/* ALERT */
-.alert-banner{display:none;align-items:center;gap:8px;background:var(--red-dim);border:1px solid rgba(240,71,71,0.25);border-radius:var(--radius);padding:9px 13px;margin-bottom:16px;font-size:12px;color:var(--red)}
+/* SIDEBAR */
+.sidebar-logo{padding:18px 16px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--b1)}
+.logo-icon{width:30px;height:30px;background:var(--purple);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-icon svg{width:16px;height:16px;fill:white}
+.logo-text{font-size:13px;font-weight:700;letter-spacing:-0.3px}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.sidebar-nav{padding:10px 8px;flex:1;overflow-y:auto}
+.nav-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:12px;font-weight:500;color:var(--muted2);transition:all 0.12s;margin-bottom:1px;user-select:none}
+.nav-item:hover{background:var(--s3);color:var(--text)}
+.nav-item.active{background:var(--pglow);color:var(--purple);font-weight:600}
+.nav-item svg{width:15px;height:15px;flex-shrink:0;opacity:0.7}
+.nav-item.active svg{opacity:1}
+.nav-badge{margin-left:auto;background:var(--red);color:white;font-size:9px;font-weight:700;padding:1px 5px;border-radius:10px}
+.sidebar-footer{padding:12px 8px;border-top:1px solid var(--b1)}
+.compact-toggle{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--r);cursor:pointer;font-size:11px;color:var(--muted2);transition:all 0.12s}
+.compact-toggle:hover{background:var(--s3);color:var(--text)}
+.toggle-switch{width:28px;height:16px;background:var(--b2);border-radius:8px;position:relative;transition:background 0.2s;flex-shrink:0}
+.toggle-switch.on{background:var(--purple)}
+.toggle-switch::after{content:'';position:absolute;width:12px;height:12px;background:white;border-radius:50%;top:2px;left:2px;transition:transform 0.2s}
+.toggle-switch.on::after{transform:translateX(12px)}
+
+/* TOPBAR */
+.topbar-stats{display:flex;align-items:center;gap:20px}
+.tstat{display:flex;align-items:baseline;gap:5px}
+.tstat-val{font-size:16px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.tstat-label{font-size:10px;color:var(--muted)}
+.tstat-sep{width:1px;height:16px;background:var(--b2)}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.pulse{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite}
+.refresh-txt{font-size:10px;color:var(--muted)}
+.compact-btn-top{padding:5px 10px;background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);font-size:11px;color:var(--muted2);cursor:pointer;transition:all 0.12s}
+.compact-btn-top:hover{color:var(--text)}
+.compact-btn-top.on{color:var(--purple);border-color:var(--purple3)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
+
+/* LIVE BANNER */
+.live-banner{display:none;align-items:center;gap:10px;background:linear-gradient(135deg,rgba(16,185,129,0.12),rgba(16,185,129,0.04));border:1px solid rgba(16,185,129,0.25);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+.live-banner.visible{display:flex}
+.live-banner-title{font-size:11px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:0.05em}
+.live-chip{display:flex;align-items:center;gap:5px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);border-radius:20px;padding:3px 9px;font-size:11px;font-weight:600;color:var(--green)}
+.live-chip-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 1.5s infinite}
+
+/* ALERT BANNER */
+.alert-banner{display:none;align-items:center;gap:8px;background:var(--rdim);border:1px solid rgba(239,68,68,0.25);border-radius:var(--r);padding:9px 14px;margin-bottom:12px;font-size:12px;color:var(--red)}
 .alert-banner.visible{display:flex}
-.alert-dot{width:7px;height:7px;background:var(--red);border-radius:50%;flex-shrink:0;animation:pulse 1.5s infinite}
-
-/* TABS */
-.tabs{display:flex;gap:2px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:3px;width:fit-content}
-.tab{padding:6px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:6px;transition:all 0.15s;user-select:none}
-.tab:hover{color:var(--text)}
-.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.alert-dot{width:6px;height:6px;background:var(--red);border-radius:50%;flex-shrink:0;animation:pulse 1.5s infinite}
 
 /* VIEWS */
 .view{display:none}.view.active{display:block}
 
-/* STREAMER PILLS */
-.section-label{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
-.streamer-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
-.streamer-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 10px 5px 6px;cursor:pointer;transition:all 0.15s}
-.streamer-pill:hover{border-color:var(--border2);background:var(--surface2)}
-.pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
-.pill-dot.online{background:var(--green);box-shadow:0 0 5px var(--green)}
-.pill-dot.offline{background:var(--muted)}
-.pill-name{font-size:11px;font-weight:500;color:var(--text)}
-.pill-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--muted2)}
+/* SECTION HEADER */
+.section-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.section-title{font-size:14px;font-weight:700}
+.section-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.section-actions{margin-left:auto;display:flex;gap:6px}
 
-/* TOOLBAR */
-.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
-.search-wrap{position:relative;max-width:240px}
-.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;fill:var(--muted);pointer-events:none}
-input.search{width:100%;padding:7px 9px 7px 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s}
-input.search:focus{border-color:var(--purple-dim)}
+/* PILLS */
+.pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:16px}
+.pill{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b1);border-radius:20px;padding:4px 10px 4px 7px;cursor:pointer;transition:all 0.12s;font-size:11px}
+.pill:hover{border-color:var(--b3);background:var(--s3)}
+.pill-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pill-dot.on{background:var(--green);box-shadow:0 0 5px var(--green)}
+.pill-dot.off{background:var(--muted)}
+.pill-name{font-weight:500;color:var(--text2)}
+.pill-pts{font-family:var(--mono);font-weight:600;color:var(--muted2);font-size:10px}
+
+/* SEARCH + TOOLBAR */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.search-box{position:relative}
+.search-box svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:12px;height:12px;fill:var(--muted);pointer-events:none}
+input.search{padding:7px 9px 7px 27px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s;width:220px}
+input.search:focus{border-color:var(--purple3)}
 input.search::placeholder{color:var(--muted)}
-.refresh-label{font-size:10px;color:var(--muted);margin-left:auto}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;transition:all 0.12s;border:1px solid transparent;user-select:none}
+.btn-ghost{background:var(--s2);border-color:var(--b1);color:var(--muted2)}
+.btn-ghost:hover{background:var(--s3);color:var(--text);border-color:var(--b2)}
+.btn-purple{background:var(--purple2);color:white}
+.btn-purple:hover{background:var(--purple)}
+.btn-red{background:rgba(239,68,68,0.1);border-color:rgba(239,68,68,0.3);color:var(--red)}
+.btn-red:hover{background:rgba(239,68,68,0.2)}
+.btn-green{background:var(--gdim);border-color:rgba(16,185,129,0.3);color:var(--green)}
+.btn-green:hover{background:rgba(16,185,129,0.2)}
 
 /* TABLE */
-.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.tbl-wrap{border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden}
 table{width:100%;border-collapse:collapse}
-thead tr{background:var(--surface2)}
-th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+thead tr{background:var(--s2)}
+th{padding:8px 12px;text-align:left;font-size:9px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--b1);cursor:pointer;user-select:none;white-space:nowrap}
 th:hover{color:var(--muted2)}
 th.sorted{color:var(--purple)}
-td{padding:0;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+td{padding:0;border-bottom:1px solid var(--b1);vertical-align:top}
 tr:last-child td{border-bottom:none}
-tbody tr:hover td{background:rgba(255,255,255,0.015)}
-tbody tr.silent td{background:rgba(240,71,71,0.03)}
+tbody tr:hover td{background:rgba(255,255,255,0.012)}
+tbody tr.silent-row td{background:rgba(239,68,68,0.025)}
+tbody tr.pinned-row td{background:rgba(145,71,255,0.03)}
 
-.account-cell{padding:10px 14px;vertical-align:middle}
-.account-name{font-size:12px;font-weight:600;color:var(--text);font-family:var(--mono)}
-.account-meta{font-size:10px;color:var(--muted);margin-top:2px}
-.account-uptime{font-size:10px;color:var(--muted);margin-top:1px}
-.account-delta{font-size:10px;font-weight:600;margin-top:2px}
-.account-delta.pos{color:var(--green)}
-.account-delta.neg{color:var(--red)}
-.silent-warn{font-size:10px;color:var(--red);margin-top:2px;font-weight:500}
+/* CELLS */
+.cell{padding:9px 12px;vertical-align:middle}
+.acc-name{font-size:12px;font-weight:600;color:var(--text);font-family:var(--mono);cursor:pointer}
+.acc-name:hover{color:var(--purple)}
+.acc-nick{font-size:10px;color:var(--purple);margin-top:1px}
+.acc-meta{font-size:10px;color:var(--muted);margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.meta-chip{display:inline-flex;align-items:center;gap:3px;font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px}
+.meta-crash{background:rgba(239,68,68,0.1);color:var(--red)}
+.meta-pin{color:var(--yellow)}
 
-.channels-cell{padding:8px 14px}
-.channel-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;gap:12px}
-.channel-row+.channel-row{border-top:1px solid var(--border)}
-.channel-left{display:flex;align-items:center;gap:6px}
-.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.status-dot.online{background:var(--green);box-shadow:0 0 4px var(--green)}
-.status-dot.offline{background:var(--red)}
-.channel-name{font-size:11px;color:var(--muted2);font-weight:500}
-.channel-pts-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
-.channel-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--green);white-space:nowrap}
-.channel-peak{font-size:9px;color:var(--muted);white-space:nowrap}
-.no-channels{font-size:11px;color:var(--muted);padding:6px 0}
+.ch-cell{padding:7px 12px}
+.ch-row{display:flex;align-items:center;justify-content:space-between;padding:2px 0;gap:10px}
+.ch-row+.ch-row{border-top:1px solid var(--b1)}
+.ch-left{display:flex;align-items:center;gap:5px}
+.ch-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.ch-dot.on{background:var(--green);box-shadow:0 0 4px var(--green)}
+.ch-dot.off{background:var(--red)}
+.ch-name{font-size:11px;color:var(--muted2);font-weight:500}
+.ch-right{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+.ch-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--green);white-space:nowrap}
+.ch-peak{font-size:9px;color:var(--muted)}
+.ch-goal-bar{height:2px;background:var(--b2);border-radius:1px;margin-top:2px;width:60px;overflow:hidden}
+.ch-goal-fill{height:100%;background:var(--purple);border-radius:1px;transition:width 0.5s}
 
-/* MINING STATUS CELL */
-.mining-cell{padding:10px 14px;vertical-align:middle;min-width:140px}
-.mining-active{color:var(--purple);font-size:11px;font-weight:600;display:flex;align-items:flex-start;gap:5px}
-.mining-icon{flex-shrink:0;margin-top:1px}
-.mining-channels{display:flex;flex-direction:column;gap:2px}
-.mining-channel{font-size:10px;color:var(--muted2);font-weight:400}
-.mining-channel.live{color:var(--green)}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:0.02em}
-.badge.active-badge{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,201,122,0.2)}
-.badge.active-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
-.badge.silent-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,71,71,0.2)}
-.badge.silent-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red)}
-.empty-row td{padding:32px 14px;text-align:center;color:var(--muted);font-size:12px}
+/* compact mode */
+body.compact .ch-cell{padding:4px 12px}
+body.compact .ch-row{padding:1px 0}
+body.compact .cell{padding:6px 12px}
+body.compact .ch-name{font-size:10px}
+body.compact .ch-pts{font-size:10px}
+body.compact .acc-name{font-size:11px}
 
-/* STREAMERS TAB */
-.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;margin-bottom:16px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);transition:all 0.15s}
-.back-btn:hover{color:var(--text);border-color:var(--border2)}
-.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.detail-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--purple-dim),var(--purple));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white}
-.detail-name{font-size:18px;font-weight:700}
-.detail-sub{font-size:11px;color:var(--muted);margin-top:2px}
-.detail-live{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
-.detail-live .dot{width:8px;height:8px;border-radius:50%}
-.detail-live.on{color:var(--green)}.detail-live.on .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
-.detail-live.off{color:var(--muted)}.detail-live.off .dot{background:var(--red)}
-.detail-stats{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
-.detail-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;min-width:110px}
-.detail-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px}
-.detail-stat-value{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green)}
-.detail-table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+/* MINING STATUS */
+.mine-cell{padding:9px 12px;vertical-align:middle;min-width:130px}
+.mine-active{display:flex;align-items:flex-start;gap:5px}
+.mine-icon{font-size:12px;flex-shrink:0;margin-top:1px}
+.mine-lines{display:flex;flex-direction:column;gap:1px}
+.mine-label{font-size:11px;font-weight:700;color:var(--purple)}
+.mine-ch{font-size:10px;color:var(--green);font-weight:500}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:0.02em}
+.b-active{background:var(--gdim);color:var(--green);border:1px solid rgba(16,185,129,0.2)}
+.b-active::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--green)}
+.b-silent{background:var(--rdim);color:var(--red);border:1px solid rgba(239,68,68,0.2)}
+.b-silent::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--red)}
 
-/* STREAMER LOG */
-.log-section{margin-top:20px}
-.log-list{display:flex;flex-direction:column;gap:4px;margin-top:8px}
-.log-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:11px}
-.log-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-.log-dot.online{background:var(--green)}
-.log-dot.offline{background:var(--red)}
-.log-event{font-weight:600;color:var(--text)}
-.log-time{color:var(--muted);margin-left:auto;font-family:var(--mono);font-size:10px}
+.delta-pos{color:var(--green);font-size:10px;font-weight:600}
+.delta-neg{color:var(--red);font-size:10px;font-weight:600}
+.uptime-txt{color:var(--muted);font-size:10px}
+.silent-warn{color:var(--red);font-size:10px;font-weight:600}
+.empty-row td{padding:40px 12px;text-align:center;color:var(--muted);font-size:12px}
+
+/* ROW ACTIONS */
+.row-actions{display:flex;align-items:center;gap:4px;padding:9px 8px;vertical-align:middle}
+.icon-btn{width:26px;height:26px;display:flex;align-items:center;justify-content:center;border-radius:5px;cursor:pointer;transition:all 0.12s;color:var(--muted);flex-shrink:0}
+.icon-btn:hover{background:var(--s4);color:var(--text)}
+.icon-btn.pin-active{color:var(--yellow)}
+.icon-btn.del:hover{background:rgba(239,68,68,0.1);color:var(--red)}
+.icon-btn svg{width:13px;height:13px}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);padding:24px;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.5)}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.modal-sub{font-size:12px;color:var(--muted2);margin-bottom:20px;line-height:1.5}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end}
+.modal input{width:100%;padding:8px 10px;background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;margin-bottom:12px}
+.modal input:focus{border-color:var(--purple3)}
+.modal input::placeholder{color:var(--muted)}
+
+/* STREAMER DETAIL */
+.detail-back{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;margin-bottom:14px;padding:5px 9px;border:1px solid var(--b1);border-radius:6px;background:var(--s2);transition:all 0.12s}
+.detail-back:hover{color:var(--text);border-color:var(--b2)}
+.detail-hdr{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.detail-ava{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--purple3),var(--purple));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:white;flex-shrink:0}
+.detail-live-badge{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700}
+.detail-live-badge .dot{width:8px;height:8px;border-radius:50%}
+.dlb-on{color:var(--green)}.dlb-on .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dlb-off{color:var(--muted)}.dlb-off .dot{background:var(--red)}
+.stat-cards{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.stat-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:10px 14px;min-width:100px}
+.sc-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:3px}
+.sc-val{font-size:19px;font-weight:700;font-family:var(--mono);color:var(--green)}
+
+/* LOG */
+.log-list{display:flex;flex-direction:column;gap:3px;margin-top:8px}
+.log-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;font-size:11px}
+.log-dot2{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.log-dot2.on{background:var(--green)}.log-dot2.off{background:var(--red)}
+.log-ev{font-weight:600}
+.log-t{color:var(--muted);margin-left:auto;font-family:var(--mono);font-size:10px}
 
 /* GRAPH TAB */
-.graph-search-wrap{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
-.time-filters{display:flex;gap:4px}
-.tf-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:all 0.15s}
-.tf-btn:hover{color:var(--text)}
-.tf-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
-.graph-view-btns{display:flex;gap:4px}
-.gv-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:all 0.15s}
-.gv-btn:hover{color:var(--text)}
-.gv-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
-.graph-placeholder{display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.graph-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
-.graph-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.graph-account-name{font-size:14px;font-weight:600;font-family:var(--mono)}
-.graph-delta{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px}
-.graph-delta.pos{background:var(--green-dim);color:var(--green)}
-.graph-delta.neg{background:var(--red-dim);color:var(--red)}
-.graph-delta.neu{background:var(--surface3);color:var(--muted)}
-.graph-uptime{font-size:11px;color:var(--muted);margin-left:auto}
-.account-selector{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
-.acc-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all 0.15s;font-family:var(--mono)}
-.acc-btn:hover{color:var(--text);border-color:var(--border2)}
-.acc-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
+.graph-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;align-items:start}
+.graph-sidebar{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);overflow:hidden}
+.graph-sidebar-hdr{padding:10px 12px;border-bottom:1px solid var(--b1);font-size:11px;font-weight:600;color:var(--muted2)}
+.graph-acc-list{max-height:500px;overflow-y:auto}
+.graph-acc-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;transition:all 0.12s;border-bottom:1px solid var(--b1);font-size:11px}
+.graph-acc-item:last-child{border-bottom:none}
+.graph-acc-item:hover{background:var(--s3)}
+.graph-acc-item.active{background:var(--pglow);color:var(--purple)}
+.graph-acc-item .acc-n{font-family:var(--mono);font-weight:600;flex:1;font-size:11px}
+.graph-acc-item .acc-p{font-family:var(--mono);font-size:10px;color:var(--muted2)}
+.graph-main{display:flex;flex-direction:column;gap:12px}
+.graph-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.gctrl-group{display:flex;gap:3px}
+.gctrl-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--s2);border:1px solid var(--b1);border-radius:5px;cursor:pointer;transition:all 0.12s}
+.gctrl-btn:hover{color:var(--text)}
+.gctrl-btn.active{color:var(--purple);border-color:var(--purple3);background:var(--pglow)}
+.graph-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r2);padding:16px}
+.graph-card-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.graph-acc-title{font-size:13px;font-weight:700;font-family:var(--mono)}
+.graph-chip{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px}
+.gchip-pos{background:var(--gdim);color:var(--green)}
+.gchip-neg{background:var(--rdim);color:var(--red)}
+.gchip-neu{background:var(--s4);color:var(--muted)}
+.graph-uptime{font-size:10px;color:var(--muted);margin-left:auto}
+.graph-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;height:300px;color:var(--muted);font-size:12px;gap:8px;border:1px solid var(--b1);border-radius:var(--r2);background:var(--s1)}
+.graph-placeholder svg{width:32px;height:32px;opacity:0.2}
+
+/* LEADERBOARD */
+.lb-list{display:flex;flex-direction:column;gap:6px}
+.lb-item{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:10px 14px;transition:all 0.12s}
+.lb-item:hover{border-color:var(--b2)}
+.lb-rank{font-size:13px;font-weight:700;font-family:var(--mono);color:var(--muted);width:24px;flex-shrink:0;text-align:center}
+.lb-rank.gold{color:#f59e0b}
+.lb-rank.silver{color:#9ca3af}
+.lb-rank.bronze{color:#b45309}
+.lb-name{font-size:12px;font-weight:600;font-family:var(--mono);flex:1}
+.lb-bar-wrap{flex:2;height:6px;background:var(--b2);border-radius:3px;overflow:hidden}
+.lb-bar{height:100%;background:linear-gradient(90deg,var(--purple2),var(--purple));border-radius:3px;transition:width 0.6s}
+.lb-pts{font-size:12px;font-family:var(--mono);font-weight:700;color:var(--green);width:60px;text-align:right}
+
+/* ACTIVITY FEED */
+.feed-list{display:flex;flex-direction:column;gap:4px}
+.feed-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);font-size:11px;transition:all 0.12s}
+.feed-item:hover{border-color:var(--b2)}
+.feed-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.feed-dot.on{background:var(--green)}
+.feed-dot.off{background:var(--red)}
+.feed-text{flex:1;color:var(--text2)}
+.feed-text strong{color:var(--text)}
+.feed-time{color:var(--muted);font-family:var(--mono);font-size:10px}
+
+/* GOALS */
+.goals-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:12px}
+.goal-card{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px}
+.goal-hdr{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.goal-name{font-size:11px;font-weight:600;font-family:var(--mono);flex:1}
+.goal-ch{font-size:10px;color:var(--muted2)}
+.goal-prog-bar{height:6px;background:var(--b2);border-radius:3px;overflow:hidden;margin-bottom:6px}
+.goal-prog-fill{height:100%;background:linear-gradient(90deg,var(--purple3),var(--purple));border-radius:3px;transition:width 0.5s}
+.goal-prog-fill.done{background:linear-gradient(90deg,#059669,var(--green))}
+.goal-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+.goal-pct{font-weight:700;color:var(--purple)}
+.goal-pct.done{color:var(--green)}
+
+/* HEATMAP */
+.heatmap-wrap{overflow-x:auto;margin-top:12px}
+.heatmap{display:flex;gap:3px}
+.heatmap-col{display:flex;flex-direction:column;gap:3px}
+.heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--b1);cursor:pointer;transition:transform 0.1s;position:relative}
+.heatmap-cell:hover{transform:scale(1.3);z-index:1}
+.heatmap-cell.l1{background:#2d1d5e}
+.heatmap-cell.l2{background:#4c2d8e}
+.heatmap-cell.l3{background:#6d3fc7}
+.heatmap-cell.l4{background:var(--purple)}
+.heatmap-legend{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10px;color:var(--muted)}
+.heatmap-legend-cells{display:flex;gap:3px}
+
+/* NOTIFICATION TOAST */
+.toast-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--s3);border:1px solid var(--b2);border-radius:var(--r);padding:12px 14px;max-width:300px;pointer-events:all;animation:slideIn 0.3s ease;box-shadow:0 8px 32px rgba(0,0,0,0.4)}
+.toast.live-toast{border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.08)}
+.toast-hdr{display:flex;align-items:center;gap:7px;margin-bottom:4px}
+.toast-icon{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px}
+.toast-icon.live{background:rgba(16,185,129,0.2);color:var(--green)}
+.toast-title{font-size:12px;font-weight:700}
+.toast-body{font-size:11px;color:var(--muted2);line-height:1.4}
+.toast-close{margin-left:auto;cursor:pointer;color:var(--muted);font-size:14px;line-height:1}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes fadeOut{to{opacity:0;transform:translateX(20px)}}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <svg viewBox="0 0 20 20"><path d="M2 2h16v10H11l-3 3v-3H2V2zm5 4h2v4H7V6zm5 0h2v4h-2V6z"/></svg>
-  </div>
-  <div>
-    <div class="header-title">Points Tracker</div>
-    <div class="header-sub">Twitch channel points miner</div>
-  </div>
-  <div class="header-stats">
-    <div class="hstat" id="hstatTotal">
-      <div class="hstat-val">—</div>
-      <div class="hstat-label">Total Pts</div>
-    </div>
-    <div class="hstat" id="hstatAccounts">
-      <div class="hstat-val">—</div>
-      <div class="hstat-label">Accounts</div>
-    </div>
-    <div class="hstat warn" id="hstatSilent" style="display:none">
-      <div class="hstat-val">—</div>
-      <div class="hstat-label">Silent</div>
-    </div>
-    <div class="pulse-dot"></div>
-  </div>
-</header>
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
 
-<div class="alert-banner" id="alertBanner">
-  <div class="alert-dot"></div>
-  <span id="alertText"></span>
-</div>
-
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('accounts')">Accounts</div>
-  <div class="tab" onclick="switchTab('streamers')">Streamers</div>
-  <div class="tab" onclick="switchTab('graph')">Graph</div>
-</div>
-
-<!-- ACCOUNTS VIEW -->
-<div class="view active" id="view-accounts">
-  <div class="section-label">Streamers</div>
-  <div class="streamer-pills" id="streamerPills">
-    <div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">Waiting…</div></div>
-  </div>
-  <div class="toolbar">
-    <div class="search-wrap">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-      <input class="search" id="search" placeholder="Search account…" oninput="renderAccounts()"/>
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-title">Delete Account?</div>
+    <div class="modal-sub" id="deleteModalSub">This will permanently delete all data for this account including history, peaks, and uptime. This cannot be undone.</div>
+    <div class="modal-actions">
+      <div class="btn btn-ghost" onclick="closeDeleteModal()">Cancel</div>
+      <div class="btn btn-red" onclick="confirmDelete()">Delete Everything</div>
     </div>
-    <div class="refresh-label" id="refreshLabel">—</div>
-  </div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th onclick="setSort('account')" id="th-account">Account</th>
-          <th>Channels</th>
-          <th onclick="setSort('total')" id="th-total">Total Pts</th>
-          <th onclick="setSort('status')" id="th-status">Status</th>
-        </tr>
-      </thead>
-      <tbody id="body"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
-    </table>
   </div>
 </div>
 
-<!-- STREAMERS VIEW -->
-<div class="view" id="view-streamers">
-  <div id="streamerListView">
-    <div class="section-label">All Streamers</div>
-    <div class="streamer-pills" id="streamerPills2"></div>
+<!-- NICKNAME MODAL -->
+<div class="modal-overlay" id="nickModal">
+  <div class="modal">
+    <div class="modal-title">Set Nickname</div>
+    <input type="text" id="nickInput" placeholder="Enter nickname (leave blank to remove)"/>
+    <div class="modal-actions">
+      <div class="btn btn-ghost" onclick="closeNickModal()">Cancel</div>
+      <div class="btn btn-purple" onclick="confirmNick()">Save</div>
+    </div>
   </div>
-  <div id="streamerDetailView" style="display:none">
-    <div class="back-btn" onclick="closeDetail()">← Back</div>
-    <div class="detail-header">
-      <div class="detail-avatar" id="detailAvatar"></div>
+</div>
+
+<!-- GOAL MODAL -->
+<div class="modal-overlay" id="goalModal">
+  <div class="modal">
+    <div class="modal-title">Set Points Goal</div>
+    <input type="text" id="goalAccInput" placeholder="Account name" readonly style="color:var(--muted2)"/>
+    <input type="text" id="goalChInput" placeholder="Channel name"/>
+    <input type="number" id="goalTargetInput" placeholder="Target points (e.g. 100000)"/>
+    <div class="modal-actions">
+      <div class="btn btn-ghost" onclick="closeGoalModal()">Cancel</div>
+      <div class="btn btn-purple" onclick="confirmGoal()">Set Goal</div>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"><svg viewBox="0 0 20 20"><path d="M2 2h16v10H11l-3 3v-3H2V2zm5 4h2v4H7V6zm5 0h2v4h-2V6z"/></svg></div>
       <div>
-        <div class="detail-name" id="detailName"></div>
-        <div class="detail-sub" id="detailSub"></div>
+        <div class="logo-text">PointsTracker</div>
+        <div class="logo-sub">Twitch miner dashboard</div>
       </div>
-      <div class="detail-live" id="detailLive"><div class="dot"></div><span></span></div>
     </div>
-    <div class="detail-stats">
-      <div class="detail-stat"><div class="detail-stat-label">Total Points</div><div class="detail-stat-value" id="detailTotalPts">—</div></div>
-      <div class="detail-stat"><div class="detail-stat-label">Watching</div><div class="detail-stat-value" id="detailCount">—</div></div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Dashboard</div>
+      <div class="nav-item active" onclick="nav('accounts')" id="nav-accounts">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"/></svg>
+        Accounts
+        <span class="nav-badge" id="silentBadge" style="display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="nav('streamers')" id="nav-streamers">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+        Streamers
+      </div>
+      <div class="nav-item" onclick="nav('graph')" id="nav-graph">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        Graph
+      </div>
+      <div class="nav-item" onclick="nav('leaderboard')" id="nav-leaderboard">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM14 11a1 1 0 011 1v1h1a1 1 0 110 2h-1v1a1 1 0 11-2 0v-1h-1a1 1 0 110-2h1v-1a1 1 0 011-1z"/></svg>
+        Leaderboard
+      </div>
+      <div class="nav-label" style="margin-top:8px">Tools</div>
+      <div class="nav-item" onclick="nav('goals')" id="nav-goals">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        Goals
+      </div>
+      <div class="nav-item" onclick="nav('activity')" id="nav-activity">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h4a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+        Activity
+      </div>
+      <div class="nav-item" onclick="nav('heatmap')" id="nav-heatmap">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm9 4a1 1 0 10-2 0v6a1 1 0 102 0V7zm-3 2a1 1 0 10-2 0v4a1 1 0 102 0V9zm-3 3a1 1 0 10-2 0v1a1 1 0 102 0v-1z"/></svg>
+        Heatmap
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="compact-toggle" onclick="toggleCompact()">
+        <svg viewBox="0 0 20 20" fill="currentColor" style="width:14px;height:14px;opacity:0.6"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h4a1 1 0 010 2H6.414l2.293 2.293a1 1 0 11-1.414 1.414L5 6.414V8a1 1 0 01-2 0V4zm9 1a1 1 0 010-2h4a1 1 0 011 1v4a1 1 0 01-2 0V6.414l-2.293 2.293a1 1 0 11-1.414-1.414L13.586 5H12zm-9 7a1 1 0 012 0v1.586l2.293-2.293a1 1 0 111.414 1.414L6.414 15H8a1 1 0 010 2H4a1 1 0 01-1-1v-4zm13-1a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 010-2h1.586l-2.293-2.293a1 1 0 111.414-1.414L15 13.586V12a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+        <span style="font-size:11px">Compact Mode</span>
+        <div class="toggle-switch" id="compactSwitch"></div>
+      </div>
     </div>
-    <div class="detail-table-wrap">
-      <table>
-        <thead><tr><th>Account</th><th>Points</th></tr></thead>
-        <tbody id="detailBody"></tbody>
-      </table>
-    </div>
-    <div class="log-section">
-      <div class="section-label">Online / Offline Log</div>
-      <div class="log-list" id="streamerLog"></div>
-    </div>
-  </div>
-</div>
+  </aside>
 
-<!-- GRAPH VIEW -->
-<div class="view" id="view-graph">
-  <div class="graph-search-wrap">
-    <div class="search-wrap">
-      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-      <input class="search" id="graphSearch" placeholder="Search account…" oninput="filterGraphAccounts()"/>
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-stats">
+        <div class="tstat">
+          <div class="tstat-val" id="hTotalPts">—</div>
+          <div class="tstat-label">total pts</div>
+        </div>
+        <div class="tstat-sep"></div>
+        <div class="tstat">
+          <div class="tstat-val" id="hAccounts">—</div>
+          <div class="tstat-label">accounts</div>
+        </div>
+        <div class="tstat-sep"></div>
+        <div class="tstat" id="hSilentWrap" style="display:none">
+          <div class="tstat-val" id="hSilent" style="color:var(--red)">—</div>
+          <div class="tstat-label">silent</div>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="refresh-txt" id="refreshTxt">—</div>
+        <div class="pulse"></div>
+      </div>
     </div>
-    <div class="time-filters">
-      <div class="tf-btn active" onclick="setTimeFilter(30,this)">30m</div>
-      <div class="tf-btn" onclick="setTimeFilter(60,this)">1h</div>
-      <div class="tf-btn" onclick="setTimeFilter(360,this)">6h</div>
-      <div class="tf-btn" onclick="setTimeFilter(9999,this)">All</div>
+
+    <div class="content">
+      <!-- LIVE BANNER -->
+      <div class="live-banner" id="liveBanner">
+        <div class="live-banner-title">🔴 Live Now</div>
+        <div id="liveChips"></div>
+      </div>
+      <!-- ALERT -->
+      <div class="alert-banner" id="alertBanner">
+        <div class="alert-dot"></div>
+        <span id="alertText"></span>
+      </div>
+
+      <!-- ACCOUNTS -->
+      <div class="view active" id="view-accounts">
+        <div class="section-hdr">
+          <div><div class="section-title">Accounts</div><div class="section-sub">All mining accounts</div></div>
+          <div class="section-actions">
+            <div class="btn btn-ghost" onclick="exportCSV()">↓ CSV</div>
+          </div>
+        </div>
+        <div class="pills" id="streamerPills"></div>
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+            <input class="search" id="accSearch" placeholder="Search accounts…" oninput="renderAccounts()"/>
+          </div>
+          <div class="refresh-txt" id="refreshLabel">—</div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th onclick="setSort('account')" id="th-account">Account</th>
+              <th>Channels</th>
+              <th onclick="setSort('total')" id="th-total">Total</th>
+              <th onclick="setSort('status')" id="th-status">Status</th>
+              <th></th>
+            </tr></thead>
+            <tbody id="accBody"><tr class="empty-row"><td colspan="5">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- STREAMERS -->
+      <div class="view" id="view-streamers">
+        <div id="streamerList">
+          <div class="section-hdr"><div><div class="section-title">Streamers</div><div class="section-sub">All tracked streamers</div></div></div>
+          <div class="pills" id="streamerPills2"></div>
+        </div>
+        <div id="streamerDetail" style="display:none">
+          <div class="detail-back" onclick="closeDetail()">← Back to Streamers</div>
+          <div class="detail-hdr">
+            <div class="detail-ava" id="dAva"></div>
+            <div><div style="font-size:17px;font-weight:700" id="dName"></div><div style="font-size:11px;color:var(--muted);margin-top:2px" id="dSub"></div></div>
+            <div class="detail-live-badge" id="dLive"><div class="dot"></div><span></span></div>
+          </div>
+          <div class="stat-cards">
+            <div class="stat-card"><div class="sc-label">Total Points</div><div class="sc-val" id="dTotalPts">—</div></div>
+            <div class="stat-card"><div class="sc-label">Watching</div><div class="sc-val" id="dCount">—</div></div>
+          </div>
+          <div class="tbl-wrap" style="margin-bottom:16px">
+            <table><thead><tr><th>Account</th><th>Points</th></tr></thead><tbody id="dBody"></tbody></table>
+          </div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Online / Offline Log</div>
+          <div class="log-list" id="dLog"></div>
+        </div>
+      </div>
+
+      <!-- GRAPH -->
+      <div class="view" id="view-graph">
+        <div class="section-hdr"><div><div class="section-title">Graph</div><div class="section-sub">Points history per account</div></div></div>
+        <div class="graph-layout">
+          <div class="graph-sidebar">
+            <div class="graph-sidebar-hdr">
+              <input class="search" id="graphSearch" placeholder="Search…" oninput="renderGraphAccList()" style="width:100%;border:none;background:transparent;padding:0"/>
+            </div>
+            <div class="graph-acc-list" id="graphAccList"></div>
+          </div>
+          <div class="graph-main">
+            <div class="graph-controls">
+              <div class="gctrl-group">
+                <div class="gctrl-btn active" onclick="setTF(30,this)">30m</div>
+                <div class="gctrl-btn" onclick="setTF(60,this)">1h</div>
+                <div class="gctrl-btn" onclick="setTF(360,this)">6h</div>
+                <div class="gctrl-btn" onclick="setTF(9999,this)">All</div>
+              </div>
+              <div class="gctrl-group">
+                <div class="gctrl-btn active" onclick="setGV('history',this)">History</div>
+                <div class="gctrl-btn" onclick="setGV('daily',this)">Daily</div>
+              </div>
+            </div>
+            <div id="graphArea">
+              <div class="graph-placeholder"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>Select an account to view graph</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LEADERBOARD -->
+      <div class="view" id="view-leaderboard">
+        <div class="section-hdr"><div><div class="section-title">Leaderboard</div><div class="section-sub">Ranked by total points</div></div></div>
+        <div class="lb-list" id="lbList"></div>
+      </div>
+
+      <!-- GOALS -->
+      <div class="view" id="view-goals">
+        <div class="section-hdr">
+          <div><div class="section-title">Goals</div><div class="section-sub">Points targets per channel</div></div>
+          <div class="section-actions"><div class="btn btn-purple" onclick="openGoalModal()">+ Add Goal</div></div>
+        </div>
+        <div class="goals-grid" id="goalsGrid"><div style="color:var(--muted);font-size:12px">No goals set yet. Click + Add Goal to create one.</div></div>
+      </div>
+
+      <!-- ACTIVITY -->
+      <div class="view" id="view-activity">
+        <div class="section-hdr"><div><div class="section-title">Activity Feed</div><div class="section-sub">Live streamer events</div></div></div>
+        <div class="feed-list" id="feedList"></div>
+      </div>
+
+      <!-- HEATMAP -->
+      <div class="view" id="view-heatmap">
+        <div class="section-hdr">
+          <div><div class="section-title">Points Heatmap</div><div class="section-sub">Daily earnings calendar</div></div>
+          <div class="section-actions">
+            <select id="heatmapAccSel" onchange="renderHeatmap()" style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);color:var(--text);padding:5px 8px;font-size:11px;outline:none"></select>
+          </div>
+        </div>
+        <div class="heatmap-wrap" id="heatmapWrap"></div>
+        <div class="heatmap-legend">Less <div class="heatmap-legend-cells"><div class="heatmap-cell"></div><div class="heatmap-cell l1"></div><div class="heatmap-cell l2"></div><div class="heatmap-cell l3"></div><div class="heatmap-cell l4"></div></div> More</div>
+      </div>
     </div>
-    <div class="graph-view-btns">
-      <div class="gv-btn active" onclick="setGraphView('history',this)">History</div>
-      <div class="gv-btn" onclick="setGraphView('daily',this)">Daily</div>
-    </div>
-  </div>
-  <div class="account-selector" id="accountSelector"></div>
-  <div id="graphArea">
-    <div class="graph-placeholder">Select an account above to view its points history</div>
   </div>
 </div>
 
 <script>
-let pointsData  = {};
-let peakData    = {};
-let uptimeData  = {};
-let deltaCache  = {};   // account -> {1h,6h,24h}
-let streamerLogs= {};
-let sortKey     = 'total';
-let sortDir     = -1;
-let serverHistory = {}; // loaded from /api/history/<acc>
-let graphAccount  = null;
-let graphMinutes  = 30;
-let graphView     = 'history'; // 'history' | 'daily'
-let chartInstance = null;
-let dailyData     = {};
+// ===================== STATE =====================
+let pointsData={}, peakData={}, uptimeData={}, deltaCache={}, dailyData={}, goalsData={}, nicknames={}, pinnedAccs=[], crashData={};
+let serverHistory={};
+let sortKey='total', sortDir=-1;
+let graphAccount=null, graphMinutes=30, graphView='history';
+let chartInstance=null;
+let deleteTarget=null, nickTarget=null;
+let prevLiveStreamers={};
+let isCompact=false;
+let animVals={};  // for animated counters
 
+// ===================== UTILS =====================
 function fmt(n){
+  if(n===undefined||n===null) return '—';
   if(n>=1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'m';
   if(n>=1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
   return n.toLocaleString();
 }
-function initials(n){return n.slice(0,2).toUpperCase()}
-
-function fmtUptime(seconds){
-  if(seconds<60) return `${seconds}s`;
-  if(seconds<3600) return `${Math.floor(seconds/60)}m`;
-  const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60);
+function ini(n){return n.slice(0,2).toUpperCase()}
+function fmtUp(s){
+  if(s<60) return s+'s';
+  if(s<3600) return Math.floor(s/60)+'m';
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60);
   return m>0?`${h}h ${m}m`:`${h}h`;
 }
-
 function fmtTs(ts){
   return new Date(ts*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 }
+function fmtAgo(ts){
+  const d=Math.floor((Date.now()/1000)-ts);
+  if(d<60) return d+'s ago';
+  if(d<3600) return Math.floor(d/60)+'m ago';
+  return Math.floor(d/3600)+'h ago';
+}
 
-function switchTab(tab){
-  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['accounts','streamers','graph'][i]===tab));
+// ===================== ANIMATED COUNTERS =====================
+function animateVal(el, target){
+  const key=el.id||el.className;
+  const start=animVals[key]||0;
+  if(start===target){el.textContent=fmt(target);return;}
+  const dur=600, steps=20, step=(target-start)/steps;
+  let cur=start, i=0;
+  const iv=setInterval(()=>{
+    cur+=step; i++;
+    el.textContent=fmt(Math.round(cur));
+    if(i>=steps){el.textContent=fmt(target);animVals[key]=target;clearInterval(iv);}
+  },dur/steps);
+}
+
+// ===================== NAV =====================
+function nav(page){
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
-  document.getElementById('view-'+tab).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  document.getElementById('view-'+page).classList.add('active');
+  if(page==='leaderboard') renderLeaderboard();
+  if(page==='goals') renderGoals();
+  if(page==='activity') renderActivity();
+  if(page==='heatmap') renderHeatmap();
 }
 
-function setSort(key){
-  if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;}
-  document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
-  const th=document.getElementById('th-'+key);
-  if(th) th.classList.add('sorted');
-  renderAccounts();
+// ===================== COMPACT =====================
+function toggleCompact(){
+  isCompact=!isCompact;
+  document.body.classList.toggle('compact',isCompact);
+  document.getElementById('compactSwitch').classList.toggle('on',isCompact);
 }
 
-function setGraphView(v, el){
-  graphView=v;
-  document.querySelectorAll('.gv-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  if(graphAccount) renderGraph();
+// ===================== KEYBOARD SHORTCUTS =====================
+document.addEventListener('keydown',e=>{
+  if(document.activeElement.tagName==='INPUT') return;
+  if(e.key==='1') nav('accounts');
+  else if(e.key==='2') nav('streamers');
+  else if(e.key==='3') nav('graph');
+  else if(e.key==='4') nav('leaderboard');
+  else if(e.key==='5') nav('goals');
+  else if(e.key==='6') nav('activity');
+  else if(e.key==='c') toggleCompact();
+});
+
+// ===================== TOAST =====================
+function showToast(title, body, type='live'){
+  const tc=document.getElementById('toastContainer');
+  const t=document.createElement('div');
+  t.className=`toast ${type}-toast`;
+  t.innerHTML=`<div class="toast-hdr"><div class="toast-icon ${type}">🔴</div><div class="toast-title">${title}</div><div class="toast-close" onclick="this.parentElement.parentElement.remove()">×</div></div><div class="toast-body">${body}</div>`;
+  tc.appendChild(t);
+  if(Notification.permission==='granted') new Notification(title,{body});
+  setTimeout(()=>{t.style.animation='fadeOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},6000);
 }
 
-// =====================
-// LOAD ALL DATA
-// =====================
+// request notif permission
+if(Notification.permission==='default') Notification.requestPermission();
+
+// ===================== LOAD =====================
 async function load(){
   try{
-    const [pointsRes, peakRes, uptimeRes, statsRes, dailyRes] = await Promise.all([
-      fetch("/api/points"),
-      fetch("/api/peak"),
-      fetch("/api/uptime"),
-      fetch("/api/stats"),
-      fetch("/api/daily")
+    const [pr,pkr,ur,sr,dr,gr,nr,pinr,cr]=await Promise.all([
+      fetch('/api/points'),fetch('/api/peak'),fetch('/api/uptime'),
+      fetch('/api/stats'),fetch('/api/daily'),fetch('/api/goals'),
+      fetch('/api/nicknames'),fetch('/api/pinned'),fetch('/api/crash-count')
     ]);
-    pointsData = await pointsRes.json();
-    peakData   = await peakRes.json();
-    uptimeData = await uptimeRes.json();
-    dailyData  = await dailyRes.json();
-    const stats= await statsRes.json();
+    pointsData=await pr.json(); peakData=await pkr.json();
+    uptimeData=await ur.json(); dailyData=await dr.json();
+    goalsData=await gr.json(); nicknames=await nr.json();
+    pinnedAccs=await pinr.json(); crashData=await cr.json();
+    const stats=await sr.json();
 
-    // update header with server stats
-    document.querySelector('#hstatTotal .hstat-val').textContent = fmt(stats.total_points||0);
-    document.querySelector('#hstatAccounts .hstat-val').textContent = stats.total_accounts||0;
-    const hs=document.getElementById('hstatSilent');
-    if(stats.silent_count>0){
-      hs.style.display='block';
-      hs.querySelector('.hstat-val').textContent=stats.silent_count+' silent';
-    } else { hs.style.display='none'; }
+    // header animated
+    const tpEl=document.getElementById('hTotalPts');
+    tpEl.id='hTotalPts';
+    animateVal(tpEl, stats.total_points||0);
+    document.getElementById('hAccounts').textContent=stats.total_accounts||0;
+    const sw=document.getElementById('hSilentWrap');
+    if(stats.silent_count>0){sw.style.display='flex';document.getElementById('hSilent').textContent=stats.silent_count;}
+    else sw.style.display='none';
 
-    // fetch deltas for all accounts in background
+    const sb=document.getElementById('silentBadge');
+    if(stats.silent_count>0){sb.style.display='';sb.textContent=stats.silent_count;}
+    else sb.style.display='none';
+
+    // deltas in background
     Object.keys(pointsData).forEach(acc=>{
-      fetch(`/api/delta/${acc}`).then(r=>r.json()).then(d=>{ deltaCache[acc]=d; }).catch(()=>{});
+      fetch(`/api/delta/${acc}`).then(r=>r.json()).then(d=>{deltaCache[acc]=d;}).catch(()=>{});
     });
 
-    // if graph account selected, refresh server history
+    // refresh graph
     if(graphAccount){
-      fetch(`/api/history/${graphAccount}`).then(r=>r.json()).then(h=>{
-        serverHistory[graphAccount]=h;
-        renderGraph();
-      }).catch(()=>{});
+      fetch(`/api/history/${graphAccount}`).then(r=>r.json()).then(h=>{serverHistory[graphAccount]=h;renderGraph();}).catch(()=>{});
     }
 
+    checkLiveNotifs();
     renderAll();
     const t=new Date();
-    document.getElementById("refreshLabel").textContent=
-      `Updated ${t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
-  }catch(e){console.log("fetch error",e);}
+    const ts=t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    document.getElementById('refreshTxt').textContent=ts;
+    document.getElementById('refreshLabel').textContent=`Updated ${ts}`;
+  }catch(e){console.log('fetch error',e);}
 }
 
+// ===================== LIVE NOTIFICATIONS =====================
+function checkLiveNotifs(){
+  const liveNow={};
+  Object.values(pointsData).forEach(info=>{
+    Object.entries(info.streamer_status||{}).forEach(([ch,on])=>{if(on) liveNow[ch]=true;});
+  });
+  Object.keys(liveNow).forEach(ch=>{
+    if(!prevLiveStreamers[ch]){
+      showToast(`🔴 ${ch} is LIVE!`,`${ch} just went live — your accounts are now mining points.`,'live');
+    }
+  });
+  prevLiveStreamers={...liveNow};
+  // live banner
+  const banner=document.getElementById('liveBanner');
+  const chips=document.getElementById('liveChips');
+  const liveList=Object.keys(liveNow);
+  if(liveList.length>0){
+    banner.classList.add('visible');
+    chips.innerHTML=liveList.map(n=>`<div class="live-chip"><div class="live-chip-dot"></div>${n}</div>`).join('');
+  } else banner.classList.remove('visible');
+}
+
+// ===================== RENDER ALL =====================
 function renderAll(){
   renderAccounts();
-  renderPills('streamerPills', false);
-  renderPills('streamerPills2', true);
-  renderAccountSelector();
+  renderPills('streamerPills',false);
+  renderPills('streamerPills2',true);
+  renderGraphAccList();
   checkAlerts();
+  if(document.getElementById('view-leaderboard').classList.contains('active')) renderLeaderboard();
+  if(document.getElementById('view-goals').classList.contains('active')) renderGoals();
+  if(document.getElementById('view-activity').classList.contains('active')) renderActivity();
 }
 
 function checkAlerts(){
   const now=Date.now()/1000;
   const silent=Object.entries(pointsData).filter(([,i])=>{const age=i.updated?now-i.updated:9999;return age>180;});
-  const banner=document.getElementById('alertBanner');
-  if(silent.length>0){
-    banner.classList.add('visible');
-    document.getElementById('alertText').textContent=`⚠ ${silent.length} account${silent.length>1?'s':''} gone silent: ${silent.map(([a])=>a).join(', ')}`;
-  } else { banner.classList.remove('visible'); }
+  const b=document.getElementById('alertBanner');
+  if(silent.length>0){b.classList.add('visible');document.getElementById('alertText').textContent=`⚠ ${silent.length} account${silent.length>1?'s':''} gone silent: ${silent.map(([a])=>a).join(', ')}`;
+  }else b.classList.remove('visible');
 }
 
 function getStreamerData(){
-  const totals={}, online={};
+  const totals={},online={};
   Object.values(pointsData).forEach(info=>{
-    Object.entries(info.channels||{}).forEach(([ch,pts])=>{ totals[ch]=(totals[ch]||0)+pts; });
-    Object.entries(info.streamer_status||{}).forEach(([ch,on])=>{ if(on) online[ch]=true; else if(online[ch]===undefined) online[ch]=false; });
+    Object.entries(info.channels||{}).forEach(([ch,pts])=>{totals[ch]=(totals[ch]||0)+pts;});
+    Object.entries(info.streamer_status||{}).forEach(([ch,on])=>{if(on)online[ch]=true;else if(online[ch]===undefined)online[ch]=false;});
   });
   return {totals,online};
 }
 
-function renderPills(id, clickable){
+function renderPills(id,clickable){
   const el=document.getElementById(id);
   const {totals,online}=getStreamerData();
   const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
-  if(!sorted.length){ el.innerHTML=`<div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">No data</div></div>`; return; }
+  if(!sorted.length){el.innerHTML=`<div class="pill"><div class="pill-name" style="color:var(--muted)">No streamers yet</div></div>`;return;}
   el.innerHTML=sorted.map(([name,pts])=>`
-    <div class="streamer-pill" ${clickable?`onclick="openDetail('${name}')"`:''}> 
-      <div class="pill-dot ${online[name]?'online':'offline'}"></div>
+    <div class="pill" ${clickable?`onclick="openDetail('${name}')"`:''}> 
+      <div class="pill-dot ${online[name]?'on':'off'}"></div>
       <div class="pill-name">${name}</div>
       <div class="pill-pts">${fmt(pts)}</div>
     </div>`).join('');
 }
 
+// ===================== ACCOUNTS TABLE =====================
+function setSort(key){
+  if(sortKey===key)sortDir*=-1;else{sortKey=key;sortDir=-1;}
+  document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
+  const th=document.getElementById('th-'+key);
+  if(th)th.classList.add('sorted');
+  renderAccounts();
+}
+
 function renderAccounts(){
-  const search=document.getElementById("search").value.toLowerCase();
-  const body=document.getElementById("body");
+  const search=document.getElementById('accSearch').value.toLowerCase();
+  const body=document.getElementById('accBody');
   const now=Date.now()/1000;
+
   let entries=Object.entries(pointsData).filter(([acc])=>acc.toLowerCase().includes(search));
 
+  // pin sort
   entries.sort(([accA,infoA],[accB,infoB])=>{
-    if(sortKey==='account'){ const a=accA.toLowerCase(),b=accB.toLowerCase(); return sortDir*(a<b?-1:a>b?1:0); }
+    const aPinned=pinnedAccs.includes(accA), bPinned=pinnedAccs.includes(accB);
+    if(aPinned&&!bPinned) return -1;
+    if(!aPinned&&bPinned) return 1;
+    if(sortKey==='account'){const a=accA.toLowerCase(),b=accB.toLowerCase();return sortDir*(a<b?-1:a>b?1:0);}
     if(sortKey==='total'){
       const a=Object.values(infoA.channels||{}).reduce((s,v)=>s+v,0);
       const b=Object.values(infoB.channels||{}).reduce((s,v)=>s+v,0);
       return sortDir*(b-a);
     }
     if(sortKey==='status'){
-      const a=infoA.updated?now-infoA.updated:9999;
-      const b=infoB.updated?now-infoB.updated:9999;
+      const a=infoA.updated?now-infoA.updated:9999, b=infoB.updated?now-infoB.updated:9999;
       return sortDir*(a-b);
     }
     return 0;
   });
 
-  if(!entries.length){ body.innerHTML=`<tr class="empty-row"><td colspan="4">No accounts found</td></tr>`; return; }
+  if(!entries.length){body.innerHTML=`<tr class="empty-row"><td colspan="5">No accounts found</td></tr>`;return;}
 
   body.innerHTML=entries.map(([account,info])=>{
     const channels=Object.entries(info.channels||{}).sort((a,b)=>b[1]-a[1]);
@@ -472,292 +831,342 @@ function renderAccounts(){
     const age=info.updated?now-info.updated:9999;
     const isSilent=age>180;
     const statuses=info.streamer_status||{};
-    const liveStreamers=channels.filter(([name])=>statuses[name]===true);
+    const liveStreamers=channels.filter(([n])=>statuses[n]===true);
     const peaks=peakData[account]||{};
     const uptime=uptimeData[account];
     const delta=deltaCache[account];
+    const nick=nicknames[account];
+    const crashes=crashData[account]||0;
+    const isPinned=pinnedAccs.includes(account);
+    const accGoals=goalsData[account]||{};
 
-    // uptime string
-    let uptimeStr='';
-    if(uptime) uptimeStr=`Running ${fmtUptime(uptime.uptime_seconds)}`;
-
-    // delta string
+    const uptimeStr=uptime?`Running ${fmtUp(uptime.uptime_seconds)}`:'';
     let deltaHTML='';
-    if(delta){
-      const d=delta['1h']||0;
-      if(d!==0){
-        const cls=d>0?'pos':'neg';
-        deltaHTML=`<div class="account-delta ${cls}">${d>0?'+':''}${fmt(Math.abs(d))} last hour</div>`;
-      }
-    }
+    if(delta){const d=delta['1h']||0;if(d!==0)deltaHTML=`<span class="${d>0?'delta-pos':'delta-neg'}">${d>0?'+':''}${fmt(Math.abs(d))} /hr</span>`;}
 
     const channelHTML=channels.length===0
-      ?`<div class="no-channels">No channels yet</div>`
+      ?`<div style="font-size:11px;color:var(--muted);padding:4px 0">No channels yet</div>`
       :channels.map(([name,pts])=>{
           const peak=peaks[name];
-          const peakHTML=peak&&peak>pts?`<div class="channel-peak">peak ${fmt(peak)}</div>`:'';
-          return `
-          <div class="channel-row">
-            <div class="channel-left">
-              <div class="status-dot ${statuses[name]?'online':'offline'}"></div>
-              <span class="channel-name">${name}</span>
-            </div>
-            <div class="channel-pts-wrap">
-              <span class="channel-pts">${fmt(pts)}</span>
-              ${peakHTML}
-            </div>
+          const peakHTML=peak&&peak>pts?`<div class="ch-peak">peak ${fmt(peak)}</div>`:'';
+          const goal=accGoals[name];
+          const goalBar=goal?`<div class="ch-goal-bar"><div class="ch-goal-fill" style="width:${Math.min(100,Math.round(pts/goal*100))}%"></div></div>`:'';
+          return `<div class="ch-row">
+            <div class="ch-left"><div class="ch-dot ${statuses[name]?'on':'off'}"></div><span class="ch-name">${name}</span></div>
+            <div class="ch-right"><span class="ch-pts">${fmt(pts)}</span>${peakHTML}${goalBar}</div>
           </div>`;
         }).join('');
 
-    let miningCell;
+    let mineCell;
     if(isSilent){
-      miningCell=`<span class="badge silent-badge">SILENT · ${Math.floor(age/60)}m ago</span>`;
-    } else if(liveStreamers.length>0){
-      const lines=liveStreamers.map(([name])=>`<div class="mining-channel live">· ${name}</div>`).join('');
-      miningCell=`<div class="mining-active"><span class="mining-icon">⛏</span><div class="mining-channels"><div style="color:var(--purple);font-size:11px;font-weight:600">Mining</div>${lines}</div></div>`;
-    } else {
-      miningCell=`<span class="badge active-badge">ACTIVE</span>`;
+      mineCell=`<span class="badge b-silent">SILENT · ${Math.floor(age/60)}m</span>`;
+    }else if(liveStreamers.length>0){
+      const lines=liveStreamers.map(([n])=>`<div class="mine-ch">· ${n}</div>`).join('');
+      mineCell=`<div class="mine-active"><span class="mine-icon">⛏</span><div class="mine-lines"><div class="mine-label">Mining</div>${lines}</div></div>`;
+    }else{
+      mineCell=`<span class="badge b-active">ACTIVE</span>`;
     }
 
-    const silentWarn=isSilent?`<div class="silent-warn">⚠ No data for ${Math.floor(age/60)}m</div>`:'';
+    const rowClass=`${isSilent?'silent-row':''} ${isPinned?'pinned-row':''}`;
 
-    return `
-      <tr class="${isSilent?'silent':''}">
-        <td class="account-cell">
-          <div class="account-name">${account}</div>
-          <div class="account-meta">${fmt(total)} pts total</div>
-          ${uptimeStr?`<div class="account-uptime">${uptimeStr}</div>`:''}
+    return `<tr class="${rowClass}">
+      <td class="cell">
+        <div class="acc-name" onclick="openNickModal('${account}')">${account}</div>
+        ${nick?`<div class="acc-nick">${nick}</div>`:''}
+        <div class="acc-meta">
+          ${uptimeStr?`<span class="uptime-txt">${uptimeStr}</span>`:''}
           ${deltaHTML}
-          ${silentWarn}
-        </td>
-        <td class="channels-cell">${channelHTML}</td>
-        <td class="account-cell" style="vertical-align:middle;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green)">${fmt(total)}</td>
-        <td class="mining-cell">${miningCell}</td>
-      </tr>`;
+          ${crashes>0?`<span class="meta-chip meta-crash">⚡ ${crashes} crash${crashes>1?'es':''}</span>`:''}
+          ${isSilent?`<span class="silent-warn">⚠ ${Math.floor(age/60)}m silent</span>`:''}
+        </div>
+      </td>
+      <td class="ch-cell">${channelHTML}</td>
+      <td class="cell" style="vertical-align:middle;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green)">${fmt(total)}</td>
+      <td class="mine-cell">${mineCell}</td>
+      <td class="row-actions">
+        <div class="icon-btn ${isPinned?'pin-active':''}" onclick="togglePin('${account}')" title="Pin">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v7.5l1.5 1.5v1H11v4l-1 1-1-1v-4H4.5v-1L6 11.5V4z"/></svg>
+        </div>
+        <div class="icon-btn" onclick="openGoalModalAcc('${account}')" title="Set Goal">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+        </div>
+        <div class="icon-btn del" onclick="openDeleteModal('${account}')" title="Delete">
+          <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+        </div>
+      </td>
+    </tr>`;
   }).join('');
 }
 
-// =====================
-// STREAMER DETAIL
-// =====================
+// ===================== STREAMER DETAIL =====================
 async function openDetail(name){
-  document.getElementById('streamerListView').style.display='none';
-  document.getElementById('streamerDetailView').style.display='block';
-
+  document.getElementById('streamerList').style.display='none';
+  document.getElementById('streamerDetail').style.display='block';
   const accounts=[];
-  let total=0, isOn=false;
+  let total=0,isOn=false;
   Object.entries(pointsData).forEach(([acc,info])=>{
     const pts=(info.channels||{})[name];
     const on=(info.streamer_status||{})[name];
-    if(on) isOn=true;
-    if(pts!==undefined){ accounts.push({acc,pts}); total+=pts; }
+    if(on)isOn=true;
+    if(pts!==undefined){accounts.push({acc,pts});total+=pts;}
   });
   accounts.sort((a,b)=>b.pts-a.pts);
-
-  document.getElementById('detailAvatar').textContent=initials(name);
-  document.getElementById('detailName').textContent=name;
-  document.getElementById('detailSub').textContent=`${accounts.length} account${accounts.length!==1?'s':''} watching`;
-  document.getElementById('detailTotalPts').textContent=fmt(total);
-  document.getElementById('detailCount').textContent=accounts.length;
-  const badge=document.getElementById('detailLive');
-  badge.className='detail-live '+(isOn?'on':'off');
-  badge.innerHTML=`<div class="dot"></div><span>${isOn?'LIVE':'OFFLINE'}</span>`;
-  document.getElementById('detailBody').innerHTML=accounts.length===0
+  document.getElementById('dAva').textContent=ini(name);
+  document.getElementById('dName').textContent=name;
+  document.getElementById('dSub').textContent=`${accounts.length} account${accounts.length!==1?'s':''} watching`;
+  document.getElementById('dTotalPts').textContent=fmt(total);
+  document.getElementById('dCount').textContent=accounts.length;
+  const bl=document.getElementById('dLive');
+  bl.className='detail-live-badge '+(isOn?'dlb-on':'dlb-off');
+  bl.innerHTML=`<div class="dot"></div><span>${isOn?'LIVE':'OFFLINE'}</span>`;
+  document.getElementById('dBody').innerHTML=accounts.length===0
     ?`<tr class="empty-row"><td colspan="2">No accounts tracking this</td></tr>`
-    :accounts.map(({acc,pts})=>`
-      <tr>
-        <td class="account-cell"><div class="account-name">${acc}</div></td>
-        <td class="account-cell" style="font-family:var(--mono);font-weight:600;color:var(--green);vertical-align:middle">${fmt(pts)}</td>
-      </tr>`).join('');
-
-  // load streamer log
+    :accounts.map(({acc,pts})=>`<tr><td class="cell"><div style="font-size:12px;font-weight:600;font-family:var(--mono)">${acc}</div></td><td class="cell" style="font-family:var(--mono);font-weight:700;color:var(--green);vertical-align:middle">${fmt(pts)}</td></tr>`).join('');
   try{
-    const logRes=await fetch(`/api/streamer-log/${name}`);
-    const log=await logRes.json();
-    const logEl=document.getElementById('streamerLog');
-    if(!log.length){ logEl.innerHTML=`<div style="font-size:11px;color:var(--muted)">No events logged yet</div>`; }
-    else{
-      const recent=[...log].reverse().slice(0,20);
-      logEl.innerHTML=recent.map(e=>`
-        <div class="log-item">
-          <div class="log-dot ${e.event}"></div>
-          <div class="log-event">${e.event==='online'?'Went Live':'Went Offline'}</div>
-          <div class="log-time">${fmtTs(e.ts)}</div>
-        </div>`).join('');
-    }
+    const log=await fetch(`/api/streamer-log/${name}`).then(r=>r.json());
+    const le=document.getElementById('dLog');
+    if(!log.length){le.innerHTML=`<div style="font-size:11px;color:var(--muted)">No events yet</div>`;}
+    else{const recent=[...log].reverse().slice(0,20);le.innerHTML=recent.map(e=>`<div class="log-item"><div class="log-dot2 ${e.event==='online'?'on':'off'}"></div><div class="log-ev">${e.event==='online'?'Went Live':'Went Offline'}</div><div class="log-t">${fmtTs(e.ts)}</div></div>`).join('');}
   }catch(e){}
 }
-
 function closeDetail(){
-  document.getElementById('streamerListView').style.display='block';
-  document.getElementById('streamerDetailView').style.display='none';
+  document.getElementById('streamerList').style.display='block';
+  document.getElementById('streamerDetail').style.display='none';
 }
 
-// =====================
-// GRAPH
-// =====================
-function renderAccountSelector(){
-  const sel=document.getElementById('accountSelector');
+// ===================== GRAPH =====================
+function renderGraphAccList(){
+  const el=document.getElementById('graphAccList');
   const search=document.getElementById('graphSearch').value.toLowerCase();
-  const accounts=Object.keys(pointsData).filter(a=>a.toLowerCase().includes(search)).sort();
-  sel.innerHTML=accounts.map(acc=>`
-    <div class="acc-btn ${acc===graphAccount?'active':''}" onclick="selectGraphAccount('${acc}')">${acc}</div>
-  `).join('');
+  const accs=Object.entries(pointsData)
+    .filter(([a])=>a.toLowerCase().includes(search))
+    .sort(([,a],[,b])=>{const ta=Object.values(a.channels||{}).reduce((s,v)=>s+v,0),tb=Object.values(b.channels||{}).reduce((s,v)=>s+v,0);return tb-ta;});
+  el.innerHTML=accs.map(([acc,info])=>{
+    const total=Object.values(info.channels||{}).reduce((s,v)=>s+v,0);
+    return `<div class="graph-acc-item ${acc===graphAccount?'active':''}" onclick="selectGraphAcc('${acc}')"><span class="acc-n">${acc}</span><span class="acc-p">${fmt(total)}</span></div>`;
+  }).join('');
 }
 
-function filterGraphAccounts(){ renderAccountSelector(); }
-
-async function selectGraphAccount(acc){
+async function selectGraphAcc(acc){
   graphAccount=acc;
-  renderAccountSelector();
-  // load server history
-  try{
-    const h=await fetch(`/api/history/${acc}`).then(r=>r.json());
-    serverHistory[acc]=h;
-  }catch(e){}
+  renderGraphAccList();
+  try{const h=await fetch(`/api/history/${acc}`).then(r=>r.json());serverHistory[acc]=h;}catch(e){}
   renderGraph();
 }
 
-function setTimeFilter(mins, el){
-  graphMinutes=mins;
-  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  if(graphAccount) renderGraph();
-}
+function setTF(mins,el){graphMinutes=mins;document.querySelectorAll('.gctrl-group:first-child .gctrl-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(graphAccount)renderGraph();}
+function setGV(v,el){graphView=v;document.querySelectorAll('.gctrl-group:last-child .gctrl-btn').forEach(b=>b.classList.remove('active'));el.classList.add('active');if(graphAccount)renderGraph();}
 
 function renderGraph(){
   const area=document.getElementById('graphArea');
-  if(!graphAccount){ area.innerHTML=`<div class="graph-placeholder">Select an account above</div>`; return; }
+  if(!graphAccount){area.innerHTML=`<div class="graph-placeholder"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>Select an account</div>`;return;}
+  if(graphView==='daily'){renderDailyGraph(area);return;}
 
-  if(graphView==='daily'){
-    renderDailyGraph(area);
-    return;
-  }
-
-  // history view — use server history if available, fallback to nothing
   const snaps=serverHistory[graphAccount]||[];
-  if(!snaps.length){ area.innerHTML=`<div class="graph-placeholder">No history yet — check back in a minute</div>`; return; }
-
+  if(!snaps.length){area.innerHTML=`<div class="graph-placeholder">No history yet</div>`;return;}
   const now=Date.now();
   const cutoff=graphMinutes===9999?0:now-(graphMinutes*60*1000);
   const filtered=snaps.filter(s=>s.ts>=cutoff);
-  if(filtered.length<2){ area.innerHTML=`<div class="graph-placeholder">Not enough data in this range yet</div>`; return; }
+  if(filtered.length<2){area.innerHTML=`<div class="graph-placeholder">Not enough data in this range</div>`;return;}
 
   const labels=filtered.map(s=>new Date(s.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
   const values=filtered.map(s=>Object.values(s.channels||{}).reduce((a,b)=>a+b,0));
-
-  const first=values[0], last=values[values.length-1];
-  const delta=last-first;
-  const deltaStr=(delta>=0?'+':'')+fmt(Math.abs(delta));
-  const deltaClass=delta>0?'pos':delta<0?'neg':'neu';
-
+  const delta=values[values.length-1]-values[0];
+  const dc=delta>0?'gchip-pos':delta<0?'gchip-neg':'gchip-neu';
   const uptime=uptimeData[graphAccount];
-  const uptimeStr=uptime?`Running ${fmtUptime(uptime.uptime_seconds)}`:'';
+  const uptimeStr=uptime?`Running ${fmtUp(uptime.uptime_seconds)}`:'';
 
-  area.innerHTML=`
-    <div class="graph-container">
-      <div class="graph-header">
-        <div class="graph-account-name">${graphAccount}</div>
-        <div class="graph-delta ${deltaClass}">${deltaStr} pts</div>
-        ${uptimeStr?`<div class="graph-uptime">${uptimeStr}</div>`:''}
-      </div>
-      <canvas id="pointsChart" height="220"></canvas>
-    </div>`;
-
-  if(chartInstance) chartInstance.destroy();
-  const ctx=document.getElementById('pointsChart').getContext('2d');
+  area.innerHTML=`<div class="graph-card"><div class="graph-card-hdr"><div class="graph-acc-title">${graphAccount}</div><div class="graph-chip ${dc}">${delta>=0?'+':''}${fmt(Math.abs(delta))} pts</div>${uptimeStr?`<div class="graph-uptime">${uptimeStr}</div>`:''}</div><canvas id="ptChart" height="200"></canvas></div>`;
+  if(chartInstance)chartInstance.destroy();
+  const ctx=document.getElementById('ptChart').getContext('2d');
   chartInstance=new Chart(ctx,{
     type:'line',
-    data:{
-      labels,
-      datasets:[{
-        label:'Total Points',
-        data:values,
-        borderColor:'#9147ff',
-        backgroundColor:'rgba(145,71,255,0.08)',
-        borderWidth:2,
-        pointRadius:filtered.length>60?0:3,
-        pointHoverRadius:5,
-        pointBackgroundColor:'#9147ff',
-        tension:0.3,
-        fill:true
-      }]
-    },
-    options:{
-      responsive:true,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'#16161e',borderColor:'#2a2a38',borderWidth:1,
-          titleColor:'#e8e8f0',bodyColor:'#8080a0',
-          callbacks:{label:ctx=>`${ctx.parsed.y.toLocaleString()} pts`}
-        }
-      },
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},maxTicksLimit:8}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}}
-      }
-    }
+    data:{labels,datasets:[{label:'Points',data:values,borderColor:'#9147ff',backgroundColor:'rgba(145,71,255,0.06)',borderWidth:2,pointRadius:filtered.length>60?0:2,pointHoverRadius:4,pointBackgroundColor:'#9147ff',tension:0.35,fill:true}]},
+    options:{responsive:true,interaction:{mode:'index',intersect:false},plugins:{legend:{display:false},tooltip:{backgroundColor:'#13131d',borderColor:'#252538',borderWidth:1,titleColor:'#f1f0f8',bodyColor:'#7878a0',callbacks:{label:ctx=>`${ctx.parsed.y.toLocaleString()} pts`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#5a5a78',font:{size:9},maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#5a5a78',font:{size:9},callback:v=>fmt(v)}}}}
   });
 }
 
 function renderDailyGraph(area){
   const dates=Object.keys(dailyData).sort();
-  if(!dates.length){ area.innerHTML=`<div class="graph-placeholder">No daily snapshots yet — first one taken at midnight</div>`; return; }
-
-  const labels=dates;
-  const values=dates.map(date=>{
-    const acc=dailyData[date][graphAccount];
-    if(!acc) return 0;
-    return Object.values(acc).reduce((a,b)=>a+b,0);
-  });
-
-  // calc daily gains
-  const gains=values.map((v,i)=>i===0?0:v-values[i-1]);
-
-  area.innerHTML=`
-    <div class="graph-container">
-      <div class="graph-header">
-        <div class="graph-account-name">${graphAccount}</div>
-        <div class="graph-delta pos">Daily Earned</div>
-      </div>
-      <canvas id="pointsChart" height="220"></canvas>
-    </div>`;
-
-  if(chartInstance) chartInstance.destroy();
-  const ctx=document.getElementById('pointsChart').getContext('2d');
+  if(!dates.length){area.innerHTML=`<div class="graph-placeholder">No daily snapshots yet</div>`;return;}
+  const values=dates.map(d=>{const a=dailyData[d][graphAccount];return a?Object.values(a).reduce((s,v)=>s+v,0):0;});
+  const gains=values.map((v,i)=>i===0?0:Math.max(0,v-values[i-1]));
+  area.innerHTML=`<div class="graph-card"><div class="graph-card-hdr"><div class="graph-acc-title">${graphAccount}</div><div class="graph-chip gchip-pos">Daily Earned</div></div><canvas id="ptChart" height="200"></canvas></div>`;
+  if(chartInstance)chartInstance.destroy();
+  const ctx=document.getElementById('ptChart').getContext('2d');
   chartInstance=new Chart(ctx,{
     type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        label:'Points Earned',
-        data:gains,
-        backgroundColor:'rgba(145,71,255,0.5)',
-        borderColor:'#9147ff',
-        borderWidth:1,
-        borderRadius:4,
-      }]
-    },
-    options:{
-      responsive:true,
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'#16161e',borderColor:'#2a2a38',borderWidth:1,
-          titleColor:'#e8e8f0',bodyColor:'#8080a0',
-          callbacks:{label:ctx=>`+${ctx.parsed.y.toLocaleString()} pts`}
-        }
-      },
-      scales:{
-        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10}}},
-        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}}
-      }
-    }
+    data:{labels:dates,datasets:[{label:'Earned',data:gains,backgroundColor:'rgba(145,71,255,0.4)',borderColor:'#9147ff',borderWidth:1,borderRadius:4}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#13131d',borderColor:'#252538',borderWidth:1,titleColor:'#f1f0f8',bodyColor:'#7878a0',callbacks:{label:ctx=>`+${ctx.parsed.y.toLocaleString()} pts`}}},scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#5a5a78',font:{size:9}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{color:'#5a5a78',font:{size:9},callback:v=>fmt(v)}}}}
   });
 }
 
+// ===================== LEADERBOARD =====================
+function renderLeaderboard(){
+  const el=document.getElementById('lbList');
+  const entries=Object.entries(pointsData).map(([acc,info])=>{
+    const total=Object.values(info.channels||{}).reduce((s,v)=>s+v,0);
+    return {acc,total};
+  }).sort((a,b)=>b.total-a.total);
+  if(!entries.length){el.innerHTML=`<div style="color:var(--muted);font-size:12px">No data yet</div>`;return;}
+  const max=entries[0].total||1;
+  el.innerHTML=entries.map(({acc,total},i)=>{
+    const rankClass=i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const nick=nicknames[acc];
+    return `<div class="lb-item">
+      <div class="lb-rank ${rankClass}">${i+1}</div>
+      <div class="lb-name">${nick||acc}</div>
+      <div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.round(total/max*100)}%"></div></div>
+      <div class="lb-pts">${fmt(total)}</div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== GOALS =====================
+function renderGoals(){
+  const el=document.getElementById('goalsGrid');
+  const cards=[];
+  Object.entries(goalsData).forEach(([acc,channels])=>{
+    Object.entries(channels).forEach(([ch,target])=>{
+      const current=(pointsData[acc]?.channels||{})[ch]||0;
+      const pct=Math.min(100,Math.round(current/target*100));
+      const done=pct>=100;
+      cards.push(`<div class="goal-card">
+        <div class="goal-hdr"><div class="goal-name">${acc}</div><div class="goal-ch">${ch}</div>
+          <div class="icon-btn del" onclick="deleteGoal('${acc}','${ch}')" style="margin-left:auto"><svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg></div>
+        </div>
+        <div class="goal-prog-bar"><div class="goal-prog-fill ${done?'done':''}" style="width:${pct}%"></div></div>
+        <div class="goal-meta"><span>${fmt(current)} / ${fmt(target)}</span><span class="goal-pct ${done?'done':''}">${pct}%${done?' ✓':''}</span></div>
+      </div>`);
+    });
+  });
+  el.innerHTML=cards.length?cards.join(''):`<div style="color:var(--muted);font-size:12px">No goals set yet. Click + Add Goal to create one.</div>`;
+}
+
+async function deleteGoal(acc,ch){
+  await fetch(`/api/goals/${acc}/${ch}`,{method:'DELETE'});
+  goalsData=await fetch('/api/goals').then(r=>r.json());
+  renderGoals();
+}
+
+// ===================== ACTIVITY FEED =====================
+async function renderActivity(){
+  try{
+    const events=await fetch('/api/activity').then(r=>r.json());
+    const el=document.getElementById('feedList');
+    if(!events.length){el.innerHTML=`<div style="color:var(--muted);font-size:12px">No events yet</div>`;return;}
+    el.innerHTML=events.map(e=>`<div class="feed-item"><div class="feed-dot ${e.event==='online'?'on':'off'}"></div><div class="feed-text"><strong>${e.streamer}</strong> ${e.event==='online'?'went live':'went offline'}</div><div class="feed-time">${fmtAgo(e.ts)}</div></div>`).join('');
+  }catch(e){}
+}
+
+// ===================== HEATMAP =====================
+function renderHeatmap(){
+  const sel=document.getElementById('heatmapAccSel');
+  const accs=Object.keys(pointsData);
+  if(!sel.options.length){accs.forEach(a=>{const o=document.createElement('option');o.value=a;o.textContent=a;sel.appendChild(o);});}
+  const acc=sel.value||accs[0];
+  const wrap=document.getElementById('heatmapWrap');
+  const dates=Object.keys(dailyData).sort();
+  if(!dates.length){wrap.innerHTML=`<div style="color:var(--muted);font-size:12px;margin-top:8px">No daily snapshots yet — first one at midnight</div>`;return;}
+
+  // build map: date->total
+  const map={};
+  let maxVal=0;
+  dates.forEach(d=>{
+    const a=dailyData[d][acc];
+    const v=a?Object.values(a).reduce((s,v)=>s+v,0):0;
+    // try to find gain (vs day before)
+    const di=dates.indexOf(d);
+    const prev=di>0?dailyData[dates[di-1]]?.[acc]:null;
+    const prevTotal=prev?Object.values(prev).reduce((s,v)=>s+v,0):0;
+    const gain=Math.max(0,v-prevTotal);
+    map[d]=gain;
+    if(gain>maxVal)maxVal=gain;
+  });
+
+  // group by week
+  const startDate=new Date(dates[0]);
+  const endDate=new Date(dates[dates.length-1]);
+  const cols=[];
+  let cur=new Date(startDate);
+  cur.setDate(cur.getDate()-cur.getDay()); // start of week
+  while(cur<=endDate){
+    const col=[];
+    for(let d=0;d<7;d++){
+      const ds=cur.toISOString().slice(0,10);
+      const val=map[ds]||0;
+      const l=maxVal===0?0:val/maxVal<0.25?1:val/maxVal<0.5?2:val/maxVal<0.75?3:4;
+      col.push(`<div class="heatmap-cell ${val>0?'l'+l:''}" title="${ds}: +${fmt(val)} pts"></div>`);
+      cur.setDate(cur.getDate()+1);
+    }
+    cols.push(`<div class="heatmap-col">${col.join('')}</div>`);
+  }
+  wrap.innerHTML=`<div class="heatmap">${cols.join('')}</div>`;
+}
+
+// ===================== MODALS =====================
+function openDeleteModal(acc){deleteTarget=acc;document.getElementById('deleteModalSub').textContent=`This will permanently delete all data for "${acc}" including history, peaks, and uptime. This cannot be undone.`;document.getElementById('deleteModal').classList.add('open');}
+function closeDeleteModal(){document.getElementById('deleteModal').classList.remove('open');deleteTarget=null;}
+async function confirmDelete(){
+  if(!deleteTarget)return;
+  await fetch(`/api/delete/${deleteTarget}`,{method:'DELETE'});
+  closeDeleteModal();
+  load();
+}
+
+function openNickModal(acc){nickTarget=acc;document.getElementById('nickInput').value=nicknames[acc]||'';document.getElementById('nickModal').classList.add('open');setTimeout(()=>document.getElementById('nickInput').focus(),100);}
+function closeNickModal(){document.getElementById('nickModal').classList.remove('open');nickTarget=null;}
+async function confirmNick(){
+  if(!nickTarget)return;
+  await fetch('/api/nicknames',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:nickTarget,nickname:document.getElementById('nickInput').value})});
+  nicknames=await fetch('/api/nicknames').then(r=>r.json());
+  closeNickModal();
+  renderAccounts();
+}
+
+function openGoalModal(){document.getElementById('goalModal').classList.add('open');}
+function openGoalModalAcc(acc){document.getElementById('goalAccInput').value=acc;document.getElementById('goalModal').classList.add('open');}
+function closeGoalModal(){document.getElementById('goalModal').classList.remove('open');}
+async function confirmGoal(){
+  const acc=document.getElementById('goalAccInput').value;
+  const ch=document.getElementById('goalChInput').value;
+  const target=document.getElementById('goalTargetInput').value;
+  if(!acc||!ch||!target)return;
+  await fetch('/api/goals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:acc,channel:ch,target:parseInt(target)})});
+  goalsData=await fetch('/api/goals').then(r=>r.json());
+  closeGoalModal();
+  renderGoals();
+}
+
+// ===================== PIN =====================
+async function togglePin(acc){
+  await fetch('/api/pinned',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({account:acc})});
+  pinnedAccs=await fetch('/api/pinned').then(r=>r.json());
+  renderAccounts();
+}
+
+// ===================== CSV EXPORT =====================
+function exportCSV(){
+  const rows=[['Account','Nickname','Channel','Points','Peak','Status']];
+  const now=Date.now()/1000;
+  Object.entries(pointsData).forEach(([acc,info])=>{
+    const nick=nicknames[acc]||'';
+    const age=info.updated?now-info.updated:9999;
+    const status=age>180?'SILENT':'ACTIVE';
+    const channels=info.channels||{};
+    const peaks=peakData[acc]||{};
+    Object.entries(channels).forEach(([ch,pts])=>{
+      rows.push([acc,nick,ch,pts,peaks[ch]||pts,status]);
+    });
+  });
+  const csv=rows.map(r=>r.join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download=`points_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ===================== INIT =====================
 load();
 setInterval(load,10000);
 </script>
