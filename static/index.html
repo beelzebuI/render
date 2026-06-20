@@ -5,262 +5,158 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Twitch Points Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;
+  --surface:#111117;
+  --surface2:#16161e;
+  --surface3:#1c1c26;
+  --border:#1e1e2a;
+  --border2:#2a2a38;
+  --purple:#9147ff;
+  --purple-dim:#5c2fa0;
+  --purple-glow:rgba(145,71,255,0.15);
+  --green:#00c97a;
+  --green-dim:rgba(0,201,122,0.12);
+  --red:#f04747;
+  --red-dim:rgba(240,71,71,0.1);
+  --yellow:#f5a623;
+  --text:#e8e8f0;
+  --muted:#52526a;
+  --muted2:#8080a0;
+  --mono:'JetBrains Mono',monospace;
+  --radius:8px;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 20px}
 
-  :root {
-    --bg:        #08080d;
-    --surface:   #111118;
-    --surface2:  #18181f;
-    --border:    #222230;
-    --purple:    #9147ff;
-    --purple-dim:#6a32c0;
-    --green:     #00e5a0;
-    --red:       #ff4d4d;
-    --yellow:    #f5a623;
-    --text:      #efeff1;
-    --muted:     #6e6e85;
-    --muted2:    #9898b0;
-    --mono:      'JetBrains Mono', monospace;
-  }
+/* HEADER */
+header{display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border)}
+.logo{width:32px;height:32px;background:var(--purple);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo svg{width:18px;height:18px;fill:white}
+.header-title{font-size:15px;font-weight:600;letter-spacing:-0.2px}
+.header-sub{font-size:11px;color:var(--muted);margin-top:1px}
+.header-stats{margin-left:auto;display:flex;align-items:center;gap:16px}
+.hstat{text-align:right}
+.hstat-val{font-size:15px;font-weight:700;font-family:var(--mono);color:var(--text)}
+.hstat-label{font-size:10px;color:var(--muted);margin-top:1px}
+.hstat.warn .hstat-val{color:var(--red)}
+.pulse-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    padding: 28px 24px;
-  }
+/* ALERT */
+.alert-banner{display:none;align-items:center;gap:8px;background:var(--red-dim);border:1px solid rgba(240,71,71,0.25);border-radius:var(--radius);padding:9px 13px;margin-bottom:16px;font-size:12px;color:var(--red)}
+.alert-banner.visible{display:flex}
+.alert-dot{width:7px;height:7px;background:var(--red);border-radius:50%;flex-shrink:0;animation:pulse 1.5s infinite}
 
-  /* ---- HEADER ---- */
-  header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 28px;
-  }
-  .logo {
-    width: 36px; height: 36px;
-    background: var(--purple);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-  .logo svg { width: 20px; height: 20px; fill: white; }
-  header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
-  header .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
-  .live-dot {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; color: var(--muted2); font-weight: 500;
-  }
-  .live-dot span {
-    width: 7px; height: 7px;
-    background: var(--green); border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+/* TABS */
+.tabs{display:flex;gap:2px;margin-bottom:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:3px;width:fit-content}
+.tab{padding:6px 14px;font-size:12px;font-weight:500;color:var(--muted);cursor:pointer;border-radius:6px;transition:all 0.15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.active{background:var(--surface3);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,0.3)}
 
-  /* ---- ALERT BANNER ---- */
-  .alert-banner {
-    display: none;
-    align-items: center;
-    gap: 10px;
-    background: rgba(255,77,77,0.1);
-    border: 1px solid rgba(255,77,77,0.3);
-    border-radius: 8px;
-    padding: 10px 14px;
-    margin-bottom: 20px;
-    font-size: 13px;
-    color: var(--red);
-  }
-  .alert-banner.visible { display: flex; }
-  .alert-dot { width: 8px; height: 8px; background: var(--red); border-radius: 50%; flex-shrink:0; animation: pulse 1.5s infinite; }
+/* VIEWS */
+.view{display:none}.view.active{display:block}
 
-  /* ---- NAV TABS ---- */
-  .tabs {
-    display: flex;
-    gap: 4px;
-    margin-bottom: 24px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0;
-  }
-  .tab {
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: color 0.15s, border-color 0.15s;
-    user-select: none;
-  }
-  .tab:hover { color: var(--text); }
-  .tab.active { color: var(--purple); border-bottom-color: var(--purple); }
+/* STREAMER PILLS */
+.section-label{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.streamer-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px}
+.streamer-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 10px 5px 6px;cursor:pointer;transition:all 0.15s}
+.streamer-pill:hover{border-color:var(--border2);background:var(--surface2)}
+.pill-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pill-dot.online{background:var(--green);box-shadow:0 0 5px var(--green)}
+.pill-dot.offline{background:var(--muted)}
+.pill-name{font-size:11px;font-weight:500;color:var(--text)}
+.pill-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--muted2)}
 
-  /* ---- VIEWS ---- */
-  .view { display: none; }
-  .view.active { display: block; }
+/* TOOLBAR */
+.toolbar{display:flex;gap:8px;margin-bottom:12px;align-items:center}
+.search-wrap{position:relative;max-width:240px}
+.search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:13px;height:13px;fill:var(--muted);pointer-events:none}
+input.search{width:100%;padding:7px 9px 7px 28px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;transition:border-color 0.15s}
+input.search:focus{border-color:var(--purple-dim)}
+input.search::placeholder{color:var(--muted)}
+.refresh-label{font-size:10px;color:var(--muted);margin-left:auto}
 
-  /* ---- STREAMER PILLS ---- */
-  .section-label {
-    font-size: 10px; font-weight: 600;
-    letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--muted); margin-bottom: 10px;
-  }
-  .streamer-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
-  .streamer-pill {
-    display: flex; align-items: center; gap: 8px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 8px 12px;
-    cursor: pointer;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .streamer-pill:hover { border-color: var(--purple-dim); background: var(--surface2); }
-  .streamer-pill.selected { border-color: var(--purple); background: rgba(145,71,255,0.08); }
-  .pill-avatar {
-    width: 24px; height: 24px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--purple-dim), var(--purple));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 10px; font-weight: 700; color: white; flex-shrink: 0;
-  }
-  .pill-name { font-size: 12px; font-weight: 500; color: var(--text); }
-  .pill-points { font-size: 12px; font-family: var(--mono); font-weight: 600; color: var(--purple); }
+/* TABLE */
+.table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead tr{background:var(--surface2)}
+th{padding:9px 14px;text-align:left;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;user-select:none;white-space:nowrap}
+th:hover{color:var(--muted2)}
+th.sorted{color:var(--purple)}
+td{padding:0;border-bottom:1px solid var(--border);font-size:12px;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:rgba(255,255,255,0.015)}
+tbody tr.silent td{background:rgba(240,71,71,0.03)}
 
-  /* online dot on pill */
-  .pill-status-dot {
-    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  }
-  .pill-status-dot.online { background: var(--green); }
-  .pill-status-dot.offline { background: var(--muted); }
+.account-cell{padding:10px 14px;vertical-align:middle}
+.account-name{font-size:12px;font-weight:600;color:var(--text);font-family:var(--mono)}
+.account-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.silent-warn{font-size:10px;color:var(--red);margin-top:2px;font-weight:500}
 
-  /* ---- TOOLBAR ---- */
-  .toolbar {
-    display: flex; gap: 10px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;
-  }
-  .search-wrap { position: relative; flex: 1; max-width: 280px; }
-  .search-wrap svg {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    width: 14px; height: 14px; fill: var(--muted); pointer-events: none;
-  }
-  input.search {
-    width: 100%; padding: 8px 10px 8px 30px;
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 7px; color: var(--text); font-size: 13px;
-    font-family: 'Inter', sans-serif; outline: none; transition: border-color 0.15s;
-  }
-  input.search:focus { border-color: var(--purple-dim); }
-  input.search::placeholder { color: var(--muted); }
-  .refresh-label { font-size: 11px; color: var(--muted); margin-left: auto; }
+.channels-cell{padding:8px 14px}
+.channel-row{display:flex;align-items:center;justify-content:space-between;padding:3px 0;gap:12px}
+.channel-row+.channel-row{border-top:1px solid var(--border)}
+.channel-left{display:flex;align-items:center;gap:6px}
+.status-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.status-dot.online{background:var(--green);box-shadow:0 0 4px var(--green)}
+.status-dot.offline{background:var(--red)}
+.channel-name{font-size:11px;color:var(--muted2);font-weight:500}
+.channel-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--green);white-space:nowrap}
+.no-channels{font-size:11px;color:var(--muted);padding:6px 0}
 
-  /* ---- TABLE ---- */
-  .table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-  table { width: 100%; border-collapse: collapse; }
-  thead tr { background: var(--surface2); }
-  th {
-    padding: 10px 16px; text-align: left;
-    font-size: 10px; font-weight: 600;
-    letter-spacing: 0.07em; text-transform: uppercase;
-    color: var(--muted); border-bottom: 1px solid var(--border);
-    cursor: pointer; user-select: none; white-space: nowrap;
-  }
-  th:hover { color: var(--text); }
-  th .sort-icon { margin-left: 4px; opacity: 0.4; }
-  th.sorted .sort-icon { opacity: 1; color: var(--purple); }
+/* MINING STATUS CELL */
+.mining-cell{padding:10px 14px;vertical-align:middle;min-width:140px}
+.mining-active{color:var(--purple);font-size:11px;font-weight:600;display:flex;align-items:flex-start;gap:5px}
+.mining-icon{flex-shrink:0;margin-top:1px}
+.mining-channels{display:flex;flex-direction:column;gap:2px}
+.mining-channel{font-size:10px;color:var(--muted2);font-weight:400}
+.mining-channel.live{color:var(--green)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:4px;font-size:10px;font-weight:600;letter-spacing:0.02em}
+.badge.active-badge{background:var(--green-dim);color:var(--green);border:1px solid rgba(0,201,122,0.2)}
+.badge.active-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
+.badge.silent-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,71,71,0.2)}
+.badge.silent-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red)}
 
-  td { padding: 0; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
-  tr:last-child td { border-bottom: none; }
-  tbody tr:hover td { background: rgba(145,71,255,0.03); }
+.empty-row td{padding:32px 14px;text-align:center;color:var(--muted);font-size:12px}
 
-  /* silent row */
-  tbody tr.silent td { background: rgba(255,77,77,0.04); }
-  tbody tr.silent:hover td { background: rgba(255,77,77,0.07); }
+/* STREAMERS TAB */
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);cursor:pointer;margin-bottom:16px;padding:5px 9px;border:1px solid var(--border);border-radius:6px;background:var(--surface);transition:all 0.15s}
+.back-btn:hover{color:var(--text);border-color:var(--border2)}
+.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.detail-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--purple-dim),var(--purple));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:white}
+.detail-name{font-size:18px;font-weight:700}
+.detail-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.detail-live{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600}
+.detail-live .dot{width:8px;height:8px;border-radius:50%}
+.detail-live.on{color:var(--green)}.detail-live.on .dot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.detail-live.off{color:var(--muted)}.detail-live.off .dot{background:var(--red)}
+.detail-stats{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.detail-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;min-width:110px}
+.detail-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px}
+.detail-stat-value{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green)}
+.detail-table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
 
-  .account-cell { padding: 12px 16px; vertical-align: middle; }
-  .account-name { font-size: 13px; font-weight: 600; color: var(--text); font-family: var(--mono); }
-  .account-total { font-size: 11px; color: var(--muted2); margin-top: 2px; }
-  .silent-warn { font-size: 10px; color: var(--red); margin-top: 3px; font-weight: 500; }
-
-  .channels-cell { padding: 10px 16px; }
-  .channel-row {
-    display: flex; align-items: center;
-    justify-content: space-between; padding: 4px 0; gap: 16px;
-  }
-  .channel-row + .channel-row { border-top: 1px solid var(--border); }
-  .channel-left { display: flex; align-items: center; gap: 7px; }
-
-  /* green/red dot next to streamer name */
-  .status-dot {
-    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-  }
-  .status-dot.online { background: var(--green); box-shadow: 0 0 4px var(--green); }
-  .status-dot.offline { background: var(--red); }
-
-  .channel-name { font-size: 12px; color: var(--muted2); font-weight: 500; }
-  .channel-pts { font-size: 12px; font-family: var(--mono); font-weight: 600; color: var(--green); white-space: nowrap; }
-  .no-channels { font-size: 12px; color: var(--muted); padding: 8px 0; }
-
-  .status-cell { padding: 12px 16px; vertical-align: middle; }
-  .badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 8px; border-radius: 4px;
-    font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
-  }
-  .badge.active-miner {
-    background: rgba(0,229,160,0.12); color: var(--green);
-    border: 1px solid rgba(0,229,160,0.25);
-  }
-  .badge.active-miner::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--green); }
-  .badge.idle-miner {
-    background: rgba(255,77,77,0.1); color: var(--red);
-    border: 1px solid rgba(255,77,77,0.25);
-  }
-  .badge.idle-miner::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--red); }
-
-  .empty-row td { padding: 40px 16px; text-align: center; color: var(--muted); font-size: 13px; }
-
-  /* ---- STREAMER DETAIL VIEW ---- */
-  .back-btn {
-    display: inline-flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--muted); cursor: pointer;
-    margin-bottom: 20px; padding: 6px 10px;
-    border: 1px solid var(--border); border-radius: 6px;
-    background: var(--surface);
-    transition: color 0.15s, border-color 0.15s;
-  }
-  .back-btn:hover { color: var(--text); border-color: var(--border2); }
-
-  .detail-header {
-    display: flex; align-items: center; gap: 14px; margin-bottom: 24px;
-  }
-  .detail-avatar {
-    width: 48px; height: 48px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--purple-dim), var(--purple));
-    display: flex; align-items: center; justify-content: center;
-    font-size: 18px; font-weight: 700; color: white;
-  }
-  .detail-name { font-size: 20px; font-weight: 700; }
-  .detail-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
-  .detail-online-badge {
-    margin-left: auto; display: flex; align-items: center; gap: 6px;
-    font-size: 12px; font-weight: 600;
-  }
-  .detail-online-badge .dot { width: 9px; height: 9px; border-radius: 50%; }
-  .detail-online-badge.online-state { color: var(--green); }
-  .detail-online-badge.online-state .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .detail-online-badge.offline-state { color: var(--muted); }
-  .detail-online-badge.offline-state .dot { background: var(--red); }
-
-  .detail-stats { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-  .detail-stat {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 8px; padding: 12px 16px; min-width: 120px;
-  }
-  .detail-stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 4px; }
-  .detail-stat-value { font-size: 22px; font-weight: 700; font-family: var(--mono); color: var(--green); }
-
-  .detail-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+/* GRAPH TAB */
+.graph-search-wrap{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
+.time-filters{display:flex;gap:4px}
+.tf-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:all 0.15s}
+.tf-btn:hover{color:var(--text)}
+.tf-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
+.graph-placeholder{display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.graph-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+.graph-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.graph-account-name{font-size:14px;font-weight:600;font-family:var(--mono)}
+.graph-delta{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px}
+.graph-delta.pos{background:var(--green-dim);color:var(--green)}
+.graph-delta.neg{background:var(--red-dim);color:var(--red)}
+.graph-delta.neu{background:var(--surface3);color:var(--muted)}
+.account-selector{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.acc-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all 0.15s;font-family:var(--mono)}
+.acc-btn:hover{color:var(--text);border-color:var(--border2)}
+.acc-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
 </style>
 </head>
 <body>
@@ -270,356 +166,433 @@
     <svg viewBox="0 0 20 20"><path d="M2 2h16v10H11l-3 3v-3H2V2zm5 4h2v4H7V6zm5 0h2v4h-2V6z"/></svg>
   </div>
   <div>
-    <h1>Points Tracker</h1>
-    <div class="sub">Twitch channel points miner</div>
+    <div class="header-title">Points Tracker</div>
+    <div class="header-sub">Twitch channel points miner</div>
   </div>
-  <div class="header-right">
-    <div class="live-dot"><span></span>auto-refreshing</div>
+  <div class="header-stats">
+    <div class="hstat" id="hstatAccounts">
+      <div class="hstat-val">—</div>
+      <div class="hstat-label">Accounts</div>
+    </div>
+    <div class="hstat warn" id="hstatSilent" style="display:none">
+      <div class="hstat-val">—</div>
+      <div class="hstat-label">Silent</div>
+    </div>
+    <div class="pulse-dot"></div>
   </div>
 </header>
 
-<!-- SILENT ALERT -->
 <div class="alert-banner" id="alertBanner">
   <div class="alert-dot"></div>
-  <span id="alertText">Some accounts have gone silent</span>
+  <span id="alertText"></span>
 </div>
 
-<!-- TABS -->
 <div class="tabs">
   <div class="tab active" onclick="switchTab('accounts')">Accounts</div>
   <div class="tab" onclick="switchTab('streamers')">Streamers</div>
+  <div class="tab" onclick="switchTab('graph')">Graph</div>
 </div>
 
-<!-- ======== ACCOUNTS VIEW ======== -->
+<!-- ACCOUNTS VIEW -->
 <div class="view active" id="view-accounts">
-
-  <div class="section-label">Points by Streamer</div>
+  <div class="section-label">Streamers</div>
   <div class="streamer-pills" id="streamerPills">
-    <div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">Waiting for data…</div></div>
+    <div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">Waiting…</div></div>
   </div>
-
   <div class="toolbar">
     <div class="search-wrap">
       <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
-      <input class="search" id="search" placeholder="Search account…" oninput="renderAccounts()" />
+      <input class="search" id="search" placeholder="Search account…" oninput="renderAccounts()"/>
     </div>
     <div class="refresh-label" id="refreshLabel">—</div>
   </div>
-
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th onclick="setSort('account')" id="th-account">Account <span class="sort-icon">↕</span></th>
-          <th>Channels &amp; Points</th>
-          <th onclick="setSort('total')" id="th-total">Total Pts <span class="sort-icon">↕</span></th>
-          <th onclick="setSort('status')" id="th-status">Miner <span class="sort-icon">↕</span></th>
+          <th onclick="setSort('account')" id="th-account">Account</th>
+          <th>Channels</th>
+          <th onclick="setSort('total')" id="th-total">Total Pts</th>
+          <th onclick="setSort('status')" id="th-status">Status</th>
         </tr>
       </thead>
-      <tbody id="body">
-        <tr class="empty-row"><td colspan="4">Loading…</td></tr>
-      </tbody>
+      <tbody id="body"><tr class="empty-row"><td colspan="4">Loading…</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<!-- ======== STREAMERS VIEW ======== -->
+<!-- STREAMERS VIEW -->
 <div class="view" id="view-streamers">
   <div id="streamerListView">
-    <div class="section-label">All Tracked Streamers</div>
+    <div class="section-label">All Streamers</div>
     <div class="streamer-pills" id="streamerPills2"></div>
   </div>
   <div id="streamerDetailView" style="display:none">
-    <div class="back-btn" onclick="closeDetail()">← Back to Streamers</div>
+    <div class="back-btn" onclick="closeDetail()">← Back</div>
     <div class="detail-header">
       <div class="detail-avatar" id="detailAvatar"></div>
       <div>
         <div class="detail-name" id="detailName"></div>
         <div class="detail-sub" id="detailSub"></div>
       </div>
-      <div class="detail-online-badge" id="detailOnlineBadge">
-        <div class="dot"></div><span></span>
-      </div>
+      <div class="detail-live" id="detailLive"><div class="dot"></div><span></span></div>
     </div>
     <div class="detail-stats">
-      <div class="detail-stat">
-        <div class="detail-stat-label">Total Points</div>
-        <div class="detail-stat-value" id="detailTotalPts">—</div>
-      </div>
-      <div class="detail-stat">
-        <div class="detail-stat-label">Accounts Watching</div>
-        <div class="detail-stat-value" id="detailAccountCount">—</div>
-      </div>
+      <div class="detail-stat"><div class="detail-stat-label">Total Points</div><div class="detail-stat-value" id="detailTotalPts">—</div></div>
+      <div class="detail-stat"><div class="detail-stat-label">Watching</div><div class="detail-stat-value" id="detailCount">—</div></div>
     </div>
     <div class="detail-table-wrap">
       <table>
-        <thead>
-          <tr>
-            <th>Account</th>
-            <th>Points on this channel</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Account</th><th>Points</th></tr></thead>
         <tbody id="detailBody"></tbody>
       </table>
     </div>
   </div>
 </div>
 
+<!-- GRAPH VIEW -->
+<div class="view" id="view-graph">
+  <div class="graph-search-wrap">
+    <div class="search-wrap">
+      <svg viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input class="search" id="graphSearch" placeholder="Search account…" oninput="filterGraphAccounts()"/>
+    </div>
+    <div class="time-filters">
+      <div class="tf-btn active" onclick="setTimeFilter(30,this)">30m</div>
+      <div class="tf-btn" onclick="setTimeFilter(60,this)">1h</div>
+      <div class="tf-btn" onclick="setTimeFilter(360,this)">6h</div>
+      <div class="tf-btn" onclick="setTimeFilter(9999,this)">All</div>
+    </div>
+  </div>
+  <div class="account-selector" id="accountSelector"></div>
+  <div id="graphArea">
+    <div class="graph-placeholder">Select an account above to view its points history</div>
+  </div>
+</div>
+
 <script>
 let pointsData = {};
 let sortKey = 'total';
-let sortDir = -1; // -1 = desc, 1 = asc
-let currentTab = 'accounts';
+let sortDir = -1;
+// history: { account -> [ {ts, channels:{name->pts}} ] }
+let history = {};
+let graphAccount = null;
+let graphMinutes = 30;
+let chartInstance = null;
 
-function fmt(n) {
-  if (n >= 1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'') + 'm';
-  if (n >= 1000) return (n/1000).toFixed(1).replace(/\.0$/,'') + 'k';
+function fmt(n){
+  if(n>=1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'m';
+  if(n>=1000) return (n/1000).toFixed(1).replace(/\.0$/,'')+'k';
   return n.toLocaleString();
 }
+function initials(n){return n.slice(0,2).toUpperCase()}
 
-function initials(name) { return name.slice(0,2).toUpperCase(); }
-
-function switchTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab').forEach((el,i) => {
-    el.classList.toggle('active', ['accounts','streamers'][i] === tab);
-  });
-  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-  document.getElementById('view-' + tab).classList.add('active');
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['accounts','streamers','graph'][i]===tab));
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById('view-'+tab).classList.add('active');
 }
 
-function setSort(key) {
-  if (sortKey === key) sortDir *= -1;
-  else { sortKey = key; sortDir = -1; }
-  document.querySelectorAll('th').forEach(th => th.classList.remove('sorted'));
-  const th = document.getElementById('th-' + key);
-  if (th) th.classList.add('sorted');
+function setSort(key){
+  if(sortKey===key) sortDir*=-1; else{sortKey=key;sortDir=-1;}
+  document.querySelectorAll('th').forEach(th=>th.classList.remove('sorted'));
+  const th=document.getElementById('th-'+key);
+  if(th) th.classList.add('sorted');
   renderAccounts();
 }
 
-async function load() {
-  try {
-    const res = await fetch("/api/points");
-    const data = await res.json();
-    pointsData = data;
+async function load(){
+  try{
+    const res=await fetch("/api/points");
+    const data=await res.json();
+    pointsData=data;
+    // store history snapshot
+    const now=Date.now();
+    Object.entries(pointsData).forEach(([acc,info])=>{
+      if(!history[acc]) history[acc]=[];
+      history[acc].push({ts:now, channels:{...(info.channels||{})}});
+      // keep max 500 snapshots per account
+      if(history[acc].length>500) history[acc].shift();
+    });
     renderAll();
-    const now = new Date();
-    document.getElementById("refreshLabel").textContent =
-      `Updated ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
-  } catch(e) { console.log("fetch error", e); }
+    const t=new Date();
+    document.getElementById("refreshLabel").textContent=
+      `Updated ${t.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+  }catch(e){console.log("fetch error",e);}
 }
 
-function renderAll() {
+function renderAll(){
   renderAccounts();
-  renderStreamerPills();
-  renderStreamerPills2();
+  renderPills('streamerPills', false);
+  renderPills('streamerPills2', true);
+  renderAccountSelector();
+  if(graphAccount) renderGraph();
   checkAlerts();
+  updateHeader();
 }
 
-// ---- SILENT ALERT ----
-function checkAlerts() {
-  const now = Date.now() / 1000;
-  const silent = Object.entries(pointsData).filter(([, info]) => {
-    const age = info.updated ? now - info.updated : 9999;
-    return age > 180;
-  });
-  const banner = document.getElementById('alertBanner');
-  const alertText = document.getElementById('alertText');
-  if (silent.length > 0) {
+function updateHeader(){
+  const now=Date.now()/1000;
+  const total=Object.keys(pointsData).length;
+  const silent=Object.values(pointsData).filter(i=>{const age=i.updated?now-i.updated:9999;return age>180;}).length;
+  document.querySelector('#hstatAccounts .hstat-val').textContent=total;
+  const hs=document.getElementById('hstatSilent');
+  if(silent>0){
+    hs.style.display='block';
+    hs.querySelector('.hstat-val').textContent=silent+' silent';
+  } else { hs.style.display='none'; }
+}
+
+function checkAlerts(){
+  const now=Date.now()/1000;
+  const silent=Object.entries(pointsData).filter(([,i])=>{const age=i.updated?now-i.updated:9999;return age>180;});
+  const banner=document.getElementById('alertBanner');
+  if(silent.length>0){
     banner.classList.add('visible');
-    alertText.textContent = `⚠ ${silent.length} account${silent.length>1?'s':''} gone silent: ${silent.map(([a])=>a).join(', ')}`;
-  } else {
-    banner.classList.remove('visible');
-  }
+    document.getElementById('alertText').textContent=`⚠ ${silent.length} account${silent.length>1?'s':''} gone silent: ${silent.map(([a])=>a).join(', ')}`;
+  } else { banner.classList.remove('visible'); }
 }
 
-// ---- STREAMER PILLS (accounts view) ----
-function renderStreamerPills() {
-  const pills = document.getElementById("streamerPills");
-  const streamerTotals = {};
-  const streamerOnline = {}; // true if ANY account sees them online
-
-  Object.values(pointsData).forEach(info => {
-    Object.entries(info.channels || {}).forEach(([ch, pts]) => {
-      streamerTotals[ch] = (streamerTotals[ch] || 0) + pts;
-    });
-    Object.entries(info.streamer_status || {}).forEach(([ch, online]) => {
-      if (online) streamerOnline[ch] = true;
-      else if (streamerOnline[ch] === undefined) streamerOnline[ch] = false;
-    });
+function getStreamerData(){
+  const totals={}, online={};
+  Object.values(pointsData).forEach(info=>{
+    Object.entries(info.channels||{}).forEach(([ch,pts])=>{ totals[ch]=(totals[ch]||0)+pts; });
+    Object.entries(info.streamer_status||{}).forEach(([ch,on])=>{ if(on) online[ch]=true; else if(online[ch]===undefined) online[ch]=false; });
   });
-
-  const sorted = Object.entries(streamerTotals).sort((a,b) => b[1]-a[1]);
-  if (sorted.length === 0) {
-    pills.innerHTML = `<div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">No data yet</div></div>`;
-    return;
-  }
-  pills.innerHTML = sorted.map(([name, pts]) => {
-    const online = streamerOnline[name] === true;
-    return `
-      <div class="streamer-pill">
-        <div class="pill-avatar">${initials(name)}</div>
-        <div class="pill-status-dot ${online?'online':'offline'}"></div>
-        <div class="pill-name">${name}</div>
-        <div class="pill-points">${fmt(pts)}</div>
-      </div>`;
-  }).join('');
+  return {totals,online};
 }
 
-// ---- STREAMER PILLS (streamers tab) ----
-function renderStreamerPills2() {
-  const pills = document.getElementById("streamerPills2");
-  const streamerTotals = {};
-  const streamerOnline = {};
-
-  Object.values(pointsData).forEach(info => {
-    Object.entries(info.channels || {}).forEach(([ch, pts]) => {
-      streamerTotals[ch] = (streamerTotals[ch] || 0) + pts;
-    });
-    Object.entries(info.streamer_status || {}).forEach(([ch, online]) => {
-      if (online) streamerOnline[ch] = true;
-      else if (streamerOnline[ch] === undefined) streamerOnline[ch] = false;
-    });
-  });
-
-  const sorted = Object.entries(streamerTotals).sort((a,b) => b[1]-a[1]);
-  if (sorted.length === 0) {
-    pills.innerHTML = `<div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">No data yet</div></div>`;
-    return;
-  }
-  pills.innerHTML = sorted.map(([name, pts]) => {
-    const online = streamerOnline[name] === true;
-    return `
-      <div class="streamer-pill" onclick="openDetail('${name}')">
-        <div class="pill-avatar">${initials(name)}</div>
-        <div class="pill-status-dot ${online?'online':'offline'}"></div>
-        <div class="pill-name">${name}</div>
-        <div class="pill-points">${fmt(pts)}</div>
-      </div>`;
-  }).join('');
+function renderPills(id, clickable){
+  const el=document.getElementById(id);
+  const {totals,online}=getStreamerData();
+  const sorted=Object.entries(totals).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length){ el.innerHTML=`<div class="streamer-pill"><div class="pill-name" style="color:var(--muted)">No data</div></div>`; return; }
+  el.innerHTML=sorted.map(([name,pts])=>`
+    <div class="streamer-pill" ${clickable?`onclick="openDetail('${name}')"`:''}> 
+      <div class="pill-dot ${online[name]?'online':'offline'}"></div>
+      <div class="pill-name">${name}</div>
+      <div class="pill-pts">${fmt(pts)}</div>
+    </div>`).join('');
 }
 
-// ---- STREAMER DETAIL PAGE ----
-function openDetail(streamerName) {
-  document.getElementById('streamerListView').style.display = 'none';
-  document.getElementById('streamerDetailView').style.display = 'block';
+function renderAccounts(){
+  const search=document.getElementById("search").value.toLowerCase();
+  const body=document.getElementById("body");
+  const now=Date.now()/1000;
+  let entries=Object.entries(pointsData).filter(([acc])=>acc.toLowerCase().includes(search));
 
-  // collect data
-  const accounts = [];
-  let totalPts = 0;
-  let isOnline = false;
-
-  Object.entries(pointsData).forEach(([account, info]) => {
-    const pts = (info.channels || {})[streamerName];
-    const online = (info.streamer_status || {})[streamerName];
-    if (online) isOnline = true;
-    if (pts !== undefined) {
-      accounts.push({ account, pts });
-      totalPts += pts;
+  entries.sort(([accA,infoA],[accB,infoB])=>{
+    if(sortKey==='account'){ const a=accA.toLowerCase(),b=accB.toLowerCase(); return sortDir*(a<b?-1:a>b?1:0); }
+    if(sortKey==='total'){
+      const a=Object.values(infoA.channels||{}).reduce((s,v)=>s+v,0);
+      const b=Object.values(infoB.channels||{}).reduce((s,v)=>s+v,0);
+      return sortDir*(b-a);
     }
+    if(sortKey==='status'){
+      const a=infoA.updated?now-infoA.updated:9999;
+      const b=infoB.updated?now-infoB.updated:9999;
+      return sortDir*(a-b);
+    }
+    return 0;
   });
 
-  accounts.sort((a,b) => b.pts - a.pts);
+  if(!entries.length){ body.innerHTML=`<tr class="empty-row"><td colspan="4">No accounts found</td></tr>`; return; }
 
-  document.getElementById('detailAvatar').textContent = initials(streamerName);
-  document.getElementById('detailName').textContent = streamerName;
-  document.getElementById('detailSub').textContent = `${accounts.length} account${accounts.length!==1?'s':''} watching`;
-  document.getElementById('detailTotalPts').textContent = fmt(totalPts);
-  document.getElementById('detailAccountCount').textContent = accounts.length;
+  body.innerHTML=entries.map(([account,info])=>{
+    const channels=Object.entries(info.channels||{}).sort((a,b)=>b[1]-a[1]);
+    const total=channels.reduce((s,[,p])=>s+p,0);
+    const age=info.updated?now-info.updated:9999;
+    const isSilent=age>180;
+    const statuses=info.streamer_status||{};
+    const liveStreamers=channels.filter(([name])=>statuses[name]===true);
 
-  const badge = document.getElementById('detailOnlineBadge');
-  badge.className = 'detail-online-badge ' + (isOnline ? 'online-state' : 'offline-state');
-  badge.innerHTML = `<div class="dot"></div><span>${isOnline ? 'LIVE' : 'OFFLINE'}</span>`;
+    const channelHTML=channels.length===0
+      ?`<div class="no-channels">No channels yet</div>`
+      :channels.map(([name,pts])=>`
+        <div class="channel-row">
+          <div class="channel-left">
+            <div class="status-dot ${statuses[name]?'online':'offline'}"></div>
+            <span class="channel-name">${name}</span>
+          </div>
+          <span class="channel-pts">${fmt(pts)}</span>
+        </div>`).join('');
 
-  document.getElementById('detailBody').innerHTML = accounts.length === 0
-    ? `<tr class="empty-row"><td colspan="2">No accounts tracking this streamer</td></tr>`
-    : accounts.map(({account, pts}) => `
-        <tr>
-          <td class="account-cell"><div class="account-name">${account}</div></td>
-          <td class="account-cell"><span style="font-family:var(--mono);font-weight:600;color:var(--green)">${fmt(pts)}</span></td>
-        </tr>`).join('');
-}
-
-function closeDetail() {
-  document.getElementById('streamerListView').style.display = 'block';
-  document.getElementById('streamerDetailView').style.display = 'none';
-}
-
-// ---- ACCOUNTS TABLE ----
-function renderAccounts() {
-  const search = document.getElementById("search").value.toLowerCase();
-  const body = document.getElementById("body");
-  const now = Date.now() / 1000;
-
-  let entries = Object.entries(pointsData).filter(([acc]) =>
-    acc.toLowerCase().includes(search)
-  );
-
-  // sort
-  entries.sort(([accA, infoA], [accB, infoB]) => {
-    let a, b;
-    if (sortKey === 'account') { a = accA.toLowerCase(); b = accB.toLowerCase(); return sortDir * (a < b ? -1 : a > b ? 1 : 0); }
-    if (sortKey === 'total') {
-      a = Object.values(infoA.channels||{}).reduce((s,v)=>s+v,0);
-      b = Object.values(infoB.channels||{}).reduce((s,v)=>s+v,0);
+    // mining status cell
+    let miningCell;
+    if(isSilent){
+      miningCell=`<span class="badge silent-badge">SILENT · ${Math.floor(age/60)}m ago</span>`;
+    } else if(liveStreamers.length>0){
+      const lines=liveStreamers.map(([name])=>`<div class="mining-channel live">· ${name}</div>`).join('');
+      miningCell=`<div class="mining-active"><span class="mining-icon">⛏</span><div class="mining-channels"><div style="color:var(--purple);font-size:11px;font-weight:600">Mining</div>${lines}</div></div>`;
+    } else {
+      miningCell=`<span class="badge active-badge">ACTIVE</span>`;
     }
-    if (sortKey === 'status') {
-      a = infoA.updated ? now - infoA.updated : 9999;
-      b = infoB.updated ? now - infoB.updated : 9999;
-      return sortDir * (a - b);
-    }
-    return sortDir * (b - a);
-  });
 
-  if (entries.length === 0) {
-    body.innerHTML = `<tr class="empty-row"><td colspan="4">No accounts found</td></tr>`;
-    return;
-  }
-
-  body.innerHTML = entries.map(([account, info]) => {
-    const channels = Object.entries(info.channels || {}).sort((a,b) => b[1]-a[1]);
-    const total = channels.reduce((s,[,p]) => s+p, 0);
-    const age = info.updated ? now - info.updated : 9999;
-    const isSilent = age > 180;
-    const statuses = info.streamer_status || {};
-
-    const channelHTML = channels.length === 0
-      ? `<div class="no-channels">No channels tracked yet</div>`
-      : channels.map(([name, pts]) => {
-          const online = statuses[name] === true;
-          return `
-            <div class="channel-row">
-              <div class="channel-left">
-                <div class="status-dot ${online?'online':'offline'}"></div>
-                <span class="channel-name">${name}</span>
-              </div>
-              <span class="channel-pts">${fmt(pts)}</span>
-            </div>`;
-        }).join('');
-
-    const silentWarn = isSilent
-      ? `<div class="silent-warn">⚠ No data for ${Math.floor(age/60)}m</div>` : '';
+    const silentWarn=isSilent?`<div class="silent-warn">⚠ No data for ${Math.floor(age/60)}m</div>`:'';
 
     return `
       <tr class="${isSilent?'silent':''}">
         <td class="account-cell">
           <div class="account-name">${account}</div>
-          <div class="account-total">${fmt(total)} total pts</div>
+          <div class="account-meta">${fmt(total)} pts total</div>
           ${silentWarn}
         </td>
         <td class="channels-cell">${channelHTML}</td>
-        <td class="account-cell" style="font-family:var(--mono);font-weight:600;color:var(--green);vertical-align:middle">${fmt(total)}</td>
-        <td class="status-cell">
-          <span class="badge ${isSilent?'idle-miner':'active-miner'}">${isSilent?'SILENT':'ACTIVE'}</span>
-        </td>
+        <td class="account-cell" style="vertical-align:middle;font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green)">${fmt(total)}</td>
+        <td class="mining-cell">${miningCell}</td>
       </tr>`;
   }).join('');
 }
 
-// init
-setSort('total');
+// STREAMER DETAIL
+function openDetail(name){
+  document.getElementById('streamerListView').style.display='none';
+  document.getElementById('streamerDetailView').style.display='block';
+  const accounts=[];
+  let total=0, isOn=false;
+  Object.entries(pointsData).forEach(([acc,info])=>{
+    const pts=(info.channels||{})[name];
+    const on=(info.streamer_status||{})[name];
+    if(on) isOn=true;
+    if(pts!==undefined){ accounts.push({acc,pts}); total+=pts; }
+  });
+  accounts.sort((a,b)=>b.pts-a.pts);
+  document.getElementById('detailAvatar').textContent=initials(name);
+  document.getElementById('detailName').textContent=name;
+  document.getElementById('detailSub').textContent=`${accounts.length} account${accounts.length!==1?'s':''} watching`;
+  document.getElementById('detailTotalPts').textContent=fmt(total);
+  document.getElementById('detailCount').textContent=accounts.length;
+  const badge=document.getElementById('detailLive');
+  badge.className='detail-live '+(isOn?'on':'off');
+  badge.innerHTML=`<div class="dot"></div><span>${isOn?'LIVE':'OFFLINE'}</span>`;
+  document.getElementById('detailBody').innerHTML=accounts.length===0
+    ?`<tr class="empty-row"><td colspan="2">No accounts tracking this</td></tr>`
+    :accounts.map(({acc,pts})=>`
+      <tr>
+        <td class="account-cell"><div class="account-name">${acc}</div></td>
+        <td class="account-cell" style="font-family:var(--mono);font-weight:600;color:var(--green);vertical-align:middle">${fmt(pts)}</td>
+      </tr>`).join('');
+}
+function closeDetail(){
+  document.getElementById('streamerListView').style.display='block';
+  document.getElementById('streamerDetailView').style.display='none';
+}
+
+// GRAPH
+function renderAccountSelector(){
+  const sel=document.getElementById('accountSelector');
+  const search=document.getElementById('graphSearch').value.toLowerCase();
+  const accounts=Object.keys(pointsData).filter(a=>a.toLowerCase().includes(search)).sort();
+  sel.innerHTML=accounts.map(acc=>`
+    <div class="acc-btn ${acc===graphAccount?'active':''}" onclick="selectGraphAccount('${acc}')">${acc}</div>
+  `).join('');
+}
+
+function filterGraphAccounts(){
+  renderAccountSelector();
+}
+
+function selectGraphAccount(acc){
+  graphAccount=acc;
+  renderAccountSelector();
+  renderGraph();
+}
+
+function setTimeFilter(mins, el){
+  graphMinutes=mins;
+  document.querySelectorAll('.tf-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(graphAccount) renderGraph();
+}
+
+function renderGraph(){
+  const area=document.getElementById('graphArea');
+  if(!graphAccount||!history[graphAccount]){
+    area.innerHTML=`<div class="graph-placeholder">No history yet for this account</div>`;
+    return;
+  }
+
+  const now=Date.now();
+  const cutoff=graphMinutes===9999?0:now-(graphMinutes*60*1000);
+  const snaps=history[graphAccount].filter(s=>s.ts>=cutoff);
+
+  if(snaps.length<2){
+    area.innerHTML=`<div class="graph-placeholder">Not enough data yet — check back in a minute</div>`;
+    return;
+  }
+
+  // total points per snapshot
+  const labels=snaps.map(s=>{
+    const d=new Date(s.ts);
+    return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  });
+  const values=snaps.map(s=>Object.values(s.channels).reduce((a,b)=>a+b,0));
+
+  // delta
+  const first=values[0], last=values[values.length-1];
+  const delta=last-first;
+  const deltaStr=(delta>=0?'+':'')+fmt(Math.abs(delta));
+  const deltaClass=delta>0?'pos':delta<0?'neg':'neu';
+
+  area.innerHTML=`
+    <div class="graph-container">
+      <div class="graph-header">
+        <div class="graph-account-name">${graphAccount}</div>
+        <div class="graph-delta ${deltaClass}">${deltaStr} pts</div>
+      </div>
+      <canvas id="pointsChart" height="220"></canvas>
+    </div>`;
+
+  if(chartInstance) chartInstance.destroy();
+
+  const ctx=document.getElementById('pointsChart').getContext('2d');
+  chartInstance=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Total Points',
+        data:values,
+        borderColor:'#9147ff',
+        backgroundColor:'rgba(145,71,255,0.08)',
+        borderWidth:2,
+        pointRadius:snaps.length>60?0:3,
+        pointHoverRadius:5,
+        pointBackgroundColor:'#9147ff',
+        tension:0.3,
+        fill:true
+      }]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#16161e',
+          borderColor:'#2a2a38',
+          borderWidth:1,
+          titleColor:'#e8e8f0',
+          bodyColor:'#8080a0',
+          callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} pts`}
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{color:'#52526a',font:{size:10},maxTicksLimit:8}
+        },
+        y:{
+          grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}
+        }
+      }
+    }
+  });
+}
+
 load();
-setInterval(load, 5000);
+setInterval(load,5000);
 </script>
 </body>
 </html>
