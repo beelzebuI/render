@@ -94,6 +94,10 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 .account-cell{padding:10px 14px;vertical-align:middle}
 .account-name{font-size:12px;font-weight:600;color:var(--text);font-family:var(--mono)}
 .account-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.account-uptime{font-size:10px;color:var(--muted);margin-top:1px}
+.account-delta{font-size:10px;font-weight:600;margin-top:2px}
+.account-delta.pos{color:var(--green)}
+.account-delta.neg{color:var(--red)}
 .silent-warn{font-size:10px;color:var(--red);margin-top:2px;font-weight:500}
 
 .channels-cell{padding:8px 14px}
@@ -104,7 +108,9 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 .status-dot.online{background:var(--green);box-shadow:0 0 4px var(--green)}
 .status-dot.offline{background:var(--red)}
 .channel-name{font-size:11px;color:var(--muted2);font-weight:500}
+.channel-pts-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
 .channel-pts{font-size:11px;font-family:var(--mono);font-weight:600;color:var(--green);white-space:nowrap}
+.channel-peak{font-size:9px;color:var(--muted);white-space:nowrap}
 .no-channels{font-size:11px;color:var(--muted);padding:6px 0}
 
 /* MINING STATUS CELL */
@@ -119,7 +125,6 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 .badge.active-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--green)}
 .badge.silent-badge{background:var(--red-dim);color:var(--red);border:1px solid rgba(240,71,71,0.2)}
 .badge.silent-badge::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--red)}
-
 .empty-row td{padding:32px 14px;text-align:center;color:var(--muted);font-size:12px}
 
 /* STREAMERS TAB */
@@ -137,7 +142,17 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 .detail-stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;min-width:110px}
 .detail-stat-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px}
 .detail-stat-value{font-size:20px;font-weight:700;font-family:var(--mono);color:var(--green)}
-.detail-table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.detail-table-wrap{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+
+/* STREAMER LOG */
+.log-section{margin-top:20px}
+.log-list{display:flex;flex-direction:column;gap:4px;margin-top:8px}
+.log-item{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-size:11px}
+.log-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.log-dot.online{background:var(--green)}
+.log-dot.offline{background:var(--red)}
+.log-event{font-weight:600;color:var(--text)}
+.log-time{color:var(--muted);margin-left:auto;font-family:var(--mono);font-size:10px}
 
 /* GRAPH TAB */
 .graph-search-wrap{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap}
@@ -145,14 +160,19 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 .tf-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:all 0.15s}
 .tf-btn:hover{color:var(--text)}
 .tf-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
+.graph-view-btns{display:flex;gap:4px}
+.gv-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:5px;cursor:pointer;transition:all 0.15s}
+.gv-btn:hover{color:var(--text)}
+.gv-btn.active{color:var(--purple);border-color:var(--purple-dim);background:var(--purple-glow)}
 .graph-placeholder{display:flex;align-items:center;justify-content:center;height:300px;color:var(--muted);font-size:13px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
 .graph-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:16px}
-.graph-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.graph-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .graph-account-name{font-size:14px;font-weight:600;font-family:var(--mono)}
 .graph-delta{font-size:12px;font-weight:600;padding:3px 8px;border-radius:4px}
 .graph-delta.pos{background:var(--green-dim);color:var(--green)}
 .graph-delta.neg{background:var(--red-dim);color:var(--red)}
 .graph-delta.neu{background:var(--surface3);color:var(--muted)}
+.graph-uptime{font-size:11px;color:var(--muted);margin-left:auto}
 .account-selector{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
 .acc-btn{padding:5px 10px;font-size:11px;font-weight:500;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;cursor:pointer;transition:all 0.15s;font-family:var(--mono)}
 .acc-btn:hover{color:var(--text);border-color:var(--border2)}
@@ -170,6 +190,10 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
     <div class="header-sub">Twitch channel points miner</div>
   </div>
   <div class="header-stats">
+    <div class="hstat" id="hstatTotal">
+      <div class="hstat-val">—</div>
+      <div class="hstat-label">Total Pts</div>
+    </div>
     <div class="hstat" id="hstatAccounts">
       <div class="hstat-val">—</div>
       <div class="hstat-label">Accounts</div>
@@ -247,6 +271,10 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
         <tbody id="detailBody"></tbody>
       </table>
     </div>
+    <div class="log-section">
+      <div class="section-label">Online / Offline Log</div>
+      <div class="log-list" id="streamerLog"></div>
+    </div>
   </div>
 </div>
 
@@ -263,6 +291,10 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
       <div class="tf-btn" onclick="setTimeFilter(360,this)">6h</div>
       <div class="tf-btn" onclick="setTimeFilter(9999,this)">All</div>
     </div>
+    <div class="graph-view-btns">
+      <div class="gv-btn active" onclick="setGraphView('history',this)">History</div>
+      <div class="gv-btn" onclick="setGraphView('daily',this)">Daily</div>
+    </div>
   </div>
   <div class="account-selector" id="accountSelector"></div>
   <div id="graphArea">
@@ -271,14 +303,19 @@ tbody tr.silent td{background:rgba(240,71,71,0.03)}
 </div>
 
 <script>
-let pointsData = {};
-let sortKey = 'total';
-let sortDir = -1;
-// history: { account -> [ {ts, channels:{name->pts}} ] }
-let history = {};
-let graphAccount = null;
-let graphMinutes = 30;
+let pointsData  = {};
+let peakData    = {};
+let uptimeData  = {};
+let deltaCache  = {};   // account -> {1h,6h,24h}
+let streamerLogs= {};
+let sortKey     = 'total';
+let sortDir     = -1;
+let serverHistory = {}; // loaded from /api/history/<acc>
+let graphAccount  = null;
+let graphMinutes  = 30;
+let graphView     = 'history'; // 'history' | 'daily'
 let chartInstance = null;
+let dailyData     = {};
 
 function fmt(n){
   if(n>=1000000) return (n/1000000).toFixed(1).replace(/\.0$/,'')+'m';
@@ -286,6 +323,17 @@ function fmt(n){
   return n.toLocaleString();
 }
 function initials(n){return n.slice(0,2).toUpperCase()}
+
+function fmtUptime(seconds){
+  if(seconds<60) return `${seconds}s`;
+  if(seconds<3600) return `${Math.floor(seconds/60)}m`;
+  const h=Math.floor(seconds/3600), m=Math.floor((seconds%3600)/60);
+  return m>0?`${h}h ${m}m`:`${h}h`;
+}
+
+function fmtTs(ts){
+  return new Date(ts*1000).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+}
 
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('active',['accounts','streamers','graph'][i]===tab));
@@ -301,19 +349,53 @@ function setSort(key){
   renderAccounts();
 }
 
+function setGraphView(v, el){
+  graphView=v;
+  document.querySelectorAll('.gv-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  if(graphAccount) renderGraph();
+}
+
+// =====================
+// LOAD ALL DATA
+// =====================
 async function load(){
   try{
-    const res=await fetch("/api/points");
-    const data=await res.json();
-    pointsData=data;
-    // store history snapshot
-    const now=Date.now();
-    Object.entries(pointsData).forEach(([acc,info])=>{
-      if(!history[acc]) history[acc]=[];
-      history[acc].push({ts:now, channels:{...(info.channels||{})}});
-      // keep max 500 snapshots per account
-      if(history[acc].length>500) history[acc].shift();
+    const [pointsRes, peakRes, uptimeRes, statsRes, dailyRes] = await Promise.all([
+      fetch("/api/points"),
+      fetch("/api/peak"),
+      fetch("/api/uptime"),
+      fetch("/api/stats"),
+      fetch("/api/daily")
+    ]);
+    pointsData = await pointsRes.json();
+    peakData   = await peakRes.json();
+    uptimeData = await uptimeRes.json();
+    dailyData  = await dailyRes.json();
+    const stats= await statsRes.json();
+
+    // update header with server stats
+    document.querySelector('#hstatTotal .hstat-val').textContent = fmt(stats.total_points||0);
+    document.querySelector('#hstatAccounts .hstat-val').textContent = stats.total_accounts||0;
+    const hs=document.getElementById('hstatSilent');
+    if(stats.silent_count>0){
+      hs.style.display='block';
+      hs.querySelector('.hstat-val').textContent=stats.silent_count+' silent';
+    } else { hs.style.display='none'; }
+
+    // fetch deltas for all accounts in background
+    Object.keys(pointsData).forEach(acc=>{
+      fetch(`/api/delta/${acc}`).then(r=>r.json()).then(d=>{ deltaCache[acc]=d; }).catch(()=>{});
     });
+
+    // if graph account selected, refresh server history
+    if(graphAccount){
+      fetch(`/api/history/${graphAccount}`).then(r=>r.json()).then(h=>{
+        serverHistory[graphAccount]=h;
+        renderGraph();
+      }).catch(()=>{});
+    }
+
     renderAll();
     const t=new Date();
     document.getElementById("refreshLabel").textContent=
@@ -326,21 +408,7 @@ function renderAll(){
   renderPills('streamerPills', false);
   renderPills('streamerPills2', true);
   renderAccountSelector();
-  if(graphAccount) renderGraph();
   checkAlerts();
-  updateHeader();
-}
-
-function updateHeader(){
-  const now=Date.now()/1000;
-  const total=Object.keys(pointsData).length;
-  const silent=Object.values(pointsData).filter(i=>{const age=i.updated?now-i.updated:9999;return age>180;}).length;
-  document.querySelector('#hstatAccounts .hstat-val').textContent=total;
-  const hs=document.getElementById('hstatSilent');
-  if(silent>0){
-    hs.style.display='block';
-    hs.querySelector('.hstat-val').textContent=silent+' silent';
-  } else { hs.style.display='none'; }
 }
 
 function checkAlerts(){
@@ -405,19 +473,42 @@ function renderAccounts(){
     const isSilent=age>180;
     const statuses=info.streamer_status||{};
     const liveStreamers=channels.filter(([name])=>statuses[name]===true);
+    const peaks=peakData[account]||{};
+    const uptime=uptimeData[account];
+    const delta=deltaCache[account];
+
+    // uptime string
+    let uptimeStr='';
+    if(uptime) uptimeStr=`Running ${fmtUptime(uptime.uptime_seconds)}`;
+
+    // delta string
+    let deltaHTML='';
+    if(delta){
+      const d=delta['1h']||0;
+      if(d!==0){
+        const cls=d>0?'pos':'neg';
+        deltaHTML=`<div class="account-delta ${cls}">${d>0?'+':''}${fmt(Math.abs(d))} last hour</div>`;
+      }
+    }
 
     const channelHTML=channels.length===0
       ?`<div class="no-channels">No channels yet</div>`
-      :channels.map(([name,pts])=>`
-        <div class="channel-row">
-          <div class="channel-left">
-            <div class="status-dot ${statuses[name]?'online':'offline'}"></div>
-            <span class="channel-name">${name}</span>
-          </div>
-          <span class="channel-pts">${fmt(pts)}</span>
-        </div>`).join('');
+      :channels.map(([name,pts])=>{
+          const peak=peaks[name];
+          const peakHTML=peak&&peak>pts?`<div class="channel-peak">peak ${fmt(peak)}</div>`:'';
+          return `
+          <div class="channel-row">
+            <div class="channel-left">
+              <div class="status-dot ${statuses[name]?'online':'offline'}"></div>
+              <span class="channel-name">${name}</span>
+            </div>
+            <div class="channel-pts-wrap">
+              <span class="channel-pts">${fmt(pts)}</span>
+              ${peakHTML}
+            </div>
+          </div>`;
+        }).join('');
 
-    // mining status cell
     let miningCell;
     if(isSilent){
       miningCell=`<span class="badge silent-badge">SILENT · ${Math.floor(age/60)}m ago</span>`;
@@ -435,6 +526,8 @@ function renderAccounts(){
         <td class="account-cell">
           <div class="account-name">${account}</div>
           <div class="account-meta">${fmt(total)} pts total</div>
+          ${uptimeStr?`<div class="account-uptime">${uptimeStr}</div>`:''}
+          ${deltaHTML}
           ${silentWarn}
         </td>
         <td class="channels-cell">${channelHTML}</td>
@@ -444,10 +537,13 @@ function renderAccounts(){
   }).join('');
 }
 
+// =====================
 // STREAMER DETAIL
-function openDetail(name){
+// =====================
+async function openDetail(name){
   document.getElementById('streamerListView').style.display='none';
   document.getElementById('streamerDetailView').style.display='block';
+
   const accounts=[];
   let total=0, isOn=false;
   Object.entries(pointsData).forEach(([acc,info])=>{
@@ -457,6 +553,7 @@ function openDetail(name){
     if(pts!==undefined){ accounts.push({acc,pts}); total+=pts; }
   });
   accounts.sort((a,b)=>b.pts-a.pts);
+
   document.getElementById('detailAvatar').textContent=initials(name);
   document.getElementById('detailName').textContent=name;
   document.getElementById('detailSub').textContent=`${accounts.length} account${accounts.length!==1?'s':''} watching`;
@@ -472,13 +569,33 @@ function openDetail(name){
         <td class="account-cell"><div class="account-name">${acc}</div></td>
         <td class="account-cell" style="font-family:var(--mono);font-weight:600;color:var(--green);vertical-align:middle">${fmt(pts)}</td>
       </tr>`).join('');
+
+  // load streamer log
+  try{
+    const logRes=await fetch(`/api/streamer-log/${name}`);
+    const log=await logRes.json();
+    const logEl=document.getElementById('streamerLog');
+    if(!log.length){ logEl.innerHTML=`<div style="font-size:11px;color:var(--muted)">No events logged yet</div>`; }
+    else{
+      const recent=[...log].reverse().slice(0,20);
+      logEl.innerHTML=recent.map(e=>`
+        <div class="log-item">
+          <div class="log-dot ${e.event}"></div>
+          <div class="log-event">${e.event==='online'?'Went Live':'Went Offline'}</div>
+          <div class="log-time">${fmtTs(e.ts)}</div>
+        </div>`).join('');
+    }
+  }catch(e){}
 }
+
 function closeDetail(){
   document.getElementById('streamerListView').style.display='block';
   document.getElementById('streamerDetailView').style.display='none';
 }
 
+// =====================
 // GRAPH
+// =====================
 function renderAccountSelector(){
   const sel=document.getElementById('accountSelector');
   const search=document.getElementById('graphSearch').value.toLowerCase();
@@ -488,13 +605,16 @@ function renderAccountSelector(){
   `).join('');
 }
 
-function filterGraphAccounts(){
-  renderAccountSelector();
-}
+function filterGraphAccounts(){ renderAccountSelector(); }
 
-function selectGraphAccount(acc){
+async function selectGraphAccount(acc){
   graphAccount=acc;
   renderAccountSelector();
+  // load server history
+  try{
+    const h=await fetch(`/api/history/${acc}`).then(r=>r.json());
+    serverHistory[acc]=h;
+  }catch(e){}
   renderGraph();
 }
 
@@ -507,44 +627,44 @@ function setTimeFilter(mins, el){
 
 function renderGraph(){
   const area=document.getElementById('graphArea');
-  if(!graphAccount||!history[graphAccount]){
-    area.innerHTML=`<div class="graph-placeholder">No history yet for this account</div>`;
+  if(!graphAccount){ area.innerHTML=`<div class="graph-placeholder">Select an account above</div>`; return; }
+
+  if(graphView==='daily'){
+    renderDailyGraph(area);
     return;
   }
+
+  // history view — use server history if available, fallback to nothing
+  const snaps=serverHistory[graphAccount]||[];
+  if(!snaps.length){ area.innerHTML=`<div class="graph-placeholder">No history yet — check back in a minute</div>`; return; }
 
   const now=Date.now();
   const cutoff=graphMinutes===9999?0:now-(graphMinutes*60*1000);
-  const snaps=history[graphAccount].filter(s=>s.ts>=cutoff);
+  const filtered=snaps.filter(s=>s.ts>=cutoff);
+  if(filtered.length<2){ area.innerHTML=`<div class="graph-placeholder">Not enough data in this range yet</div>`; return; }
 
-  if(snaps.length<2){
-    area.innerHTML=`<div class="graph-placeholder">Not enough data yet — check back in a minute</div>`;
-    return;
-  }
+  const labels=filtered.map(s=>new Date(s.ts).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+  const values=filtered.map(s=>Object.values(s.channels||{}).reduce((a,b)=>a+b,0));
 
-  // total points per snapshot
-  const labels=snaps.map(s=>{
-    const d=new Date(s.ts);
-    return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  });
-  const values=snaps.map(s=>Object.values(s.channels).reduce((a,b)=>a+b,0));
-
-  // delta
   const first=values[0], last=values[values.length-1];
   const delta=last-first;
   const deltaStr=(delta>=0?'+':'')+fmt(Math.abs(delta));
   const deltaClass=delta>0?'pos':delta<0?'neg':'neu';
+
+  const uptime=uptimeData[graphAccount];
+  const uptimeStr=uptime?`Running ${fmtUptime(uptime.uptime_seconds)}`:'';
 
   area.innerHTML=`
     <div class="graph-container">
       <div class="graph-header">
         <div class="graph-account-name">${graphAccount}</div>
         <div class="graph-delta ${deltaClass}">${deltaStr} pts</div>
+        ${uptimeStr?`<div class="graph-uptime">${uptimeStr}</div>`:''}
       </div>
       <canvas id="pointsChart" height="220"></canvas>
     </div>`;
 
   if(chartInstance) chartInstance.destroy();
-
   const ctx=document.getElementById('pointsChart').getContext('2d');
   chartInstance=new Chart(ctx,{
     type:'line',
@@ -556,7 +676,7 @@ function renderGraph(){
         borderColor:'#9147ff',
         backgroundColor:'rgba(145,71,255,0.08)',
         borderWidth:2,
-        pointRadius:snaps.length>60?0:3,
+        pointRadius:filtered.length>60?0:3,
         pointHoverRadius:5,
         pointBackgroundColor:'#9147ff',
         tension:0.3,
@@ -569,30 +689,77 @@ function renderGraph(){
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'#16161e',
-          borderColor:'#2a2a38',
-          borderWidth:1,
-          titleColor:'#e8e8f0',
-          bodyColor:'#8080a0',
-          callbacks:{label:ctx=>`${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} pts`}
+          backgroundColor:'#16161e',borderColor:'#2a2a38',borderWidth:1,
+          titleColor:'#e8e8f0',bodyColor:'#8080a0',
+          callbacks:{label:ctx=>`${ctx.parsed.y.toLocaleString()} pts`}
         }
       },
       scales:{
-        x:{
-          grid:{color:'rgba(255,255,255,0.04)'},
-          ticks:{color:'#52526a',font:{size:10},maxTicksLimit:8}
-        },
-        y:{
-          grid:{color:'rgba(255,255,255,0.04)'},
-          ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},maxTicksLimit:8}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}}
+      }
+    }
+  });
+}
+
+function renderDailyGraph(area){
+  const dates=Object.keys(dailyData).sort();
+  if(!dates.length){ area.innerHTML=`<div class="graph-placeholder">No daily snapshots yet — first one taken at midnight</div>`; return; }
+
+  const labels=dates;
+  const values=dates.map(date=>{
+    const acc=dailyData[date][graphAccount];
+    if(!acc) return 0;
+    return Object.values(acc).reduce((a,b)=>a+b,0);
+  });
+
+  // calc daily gains
+  const gains=values.map((v,i)=>i===0?0:v-values[i-1]);
+
+  area.innerHTML=`
+    <div class="graph-container">
+      <div class="graph-header">
+        <div class="graph-account-name">${graphAccount}</div>
+        <div class="graph-delta pos">Daily Earned</div>
+      </div>
+      <canvas id="pointsChart" height="220"></canvas>
+    </div>`;
+
+  if(chartInstance) chartInstance.destroy();
+  const ctx=document.getElementById('pointsChart').getContext('2d');
+  chartInstance=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        label:'Points Earned',
+        data:gains,
+        backgroundColor:'rgba(145,71,255,0.5)',
+        borderColor:'#9147ff',
+        borderWidth:1,
+        borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#16161e',borderColor:'#2a2a38',borderWidth:1,
+          titleColor:'#e8e8f0',bodyColor:'#8080a0',
+          callbacks:{label:ctx=>`+${ctx.parsed.y.toLocaleString()} pts`}
         }
+      },
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#52526a',font:{size:10},callback:v=>fmt(v)}}
       }
     }
   });
 }
 
 load();
-setInterval(load,5000);
+setInterval(load,10000);
 </script>
 </body>
 </html>
